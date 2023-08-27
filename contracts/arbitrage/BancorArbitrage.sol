@@ -686,12 +686,12 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             _setPlatformAllowance(sourceToken, address(router), sourceAmount);
 
             IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
-                poolId: bytes32(0), // TODO: initialize this attribute correctly
+                poolId: bytes32(customInt),
                 kind: IBalancerVault.SwapKind.GIVEN_IN,
                 assetIn: IBalancerAsset(sourceToken.isNative() ? address(0) : address(sourceToken)),
                 assetOut: IBalancerAsset(targetToken.isNative() ? address(0) : address(targetToken)),
                 amount: sourceAmount,
-                userData: bytes("")
+                userData: customData
             });
 
             // TODO: validate the initialization of this data structure
