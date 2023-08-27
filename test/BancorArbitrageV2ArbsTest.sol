@@ -58,7 +58,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     uint private constant MIN_LIQUIDITY_FOR_TRADING = 1000 ether;
     address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint private constant FIRST_EXCHANGE_ID = 1;
-    uint private constant LAST_EXCHANGE_ID = 6;
+    uint private constant LAST_EXCHANGE_ID = 7;
 
     enum PlatformId {
         INVALID,
@@ -1342,7 +1342,7 @@ contract BancorArbitrageV2ArbsTest is Test {
      * @param platformId - which exchange to use for middle swap
      * @param token1 - first swapped token
      * @param token2 - second swapped token
-     * @param token2 - flashloan token
+     * @param flashloanToken - flashloan token
      * @param arbAmount - initial arb amount
      * @param fee - Uni V3 fee, can be 100, 500 or 3000
      */

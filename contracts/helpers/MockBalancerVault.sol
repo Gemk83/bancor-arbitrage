@@ -10,10 +10,11 @@ import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
 import { IFlashLoanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IBalancerVault, IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
-contract MockBalancerVault {
+contract MockBalancerVault is IBalancerVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
@@ -27,6 +28,37 @@ contract MockBalancerVault {
     event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
     receive() external payable {}
+
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    )
+        external
+        payable
+        override
+        returns (uint256 amountCalculated)
+    {
+        amountCalculated = limit;
+
+        assert(block.timestamp <= deadline);
+        assert(!funds.fromInternalBalance);
+        assert(!funds.toInternalBalance);
+
+        if (singleSwap.assetIn != IBalancerAsset(address(0))) {
+            assert(msg.value == 0);
+            Token(address(singleSwap.assetIn)).safeTransferFrom(msg.sender, address(this), singleSwap.amount);
+        } else {
+            assert(msg.value == singleSwap.amount);
+        }
+
+        if (singleSwap.assetOut != IBalancerAsset(address(0))) {
+            Token(address(singleSwap.assetOut)).safeTransfer(msg.sender, amountCalculated);
+        } else {
+            payable(msg.sender).transfer(amountCalculated);
+        }
+    }
 
     /**
      * @dev Handles Flash Loans through the Vault. Calls the `receiveFlashLoan` hook on the flash loan recipient
