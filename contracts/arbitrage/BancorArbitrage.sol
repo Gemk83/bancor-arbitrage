@@ -10,7 +10,7 @@ import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/I
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IWETH } from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
-import { IBalancerVault } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IBalancerVault, IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
 import { IFlashLoanRecipient as BalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
 
 import { Token } from "../token/Token.sol";
@@ -674,6 +674,39 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 // transfer any remaining source tokens to the protocol wallet
                 // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
                 sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            }
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_BALANCER) {
+            IBalancerVault router = _balancerVault;
+
+            // allow the router to withdraw the source tokens
+            _setPlatformAllowance(sourceToken, address(router), sourceAmount);
+
+            IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
+                poolId: bytes32(0), // TODO: initialize this attribute correctly
+                kind: IBalancerVault.SwapKind.GIVEN_IN,
+                assetIn: IBalancerAsset(sourceToken.isNative() ? address(0) : address(sourceToken)),
+                assetOut: IBalancerAsset(targetToken.isNative() ? address(0) : address(targetToken)),
+                amount: sourceAmount,
+                userData: bytes("")
+            });
+
+            // TODO: validate the initialization of this data structure
+            IBalancerVault.FundManagement memory funds = IBalancerVault.FundManagement({
+                sender: address(this),
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
+
+            // perform the trade
+            if (singleSwap.assetIn == IBalancerAsset(address(0))) {
+                router.swap{ value: sourceAmount }(singleSwap, funds, minTargetAmount, deadline);
+            } else {
+                router.swap(singleSwap, funds, minTargetAmount, deadline);
             }
 
             return;
