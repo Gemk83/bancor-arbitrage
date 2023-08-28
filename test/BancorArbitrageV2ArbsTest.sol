@@ -694,6 +694,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         tokensToTrade[1] = address(arbToken2);
         tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
         uint approveAmount = type(uint256).max;
+        address aprovee = platformId == uint16(PlatformId.BALANCER) ? address(balancerVault) : address(exchanges);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -714,11 +715,11 @@ contract BancorArbitrageV2ArbsTest is Test {
                 if (userFunded) {
                     Token(address(bnt)).safeApprove(address(bancorArbitrage), AMOUNT);
                 }
-                uint allowance = arbToken1.allowance(address(bancorArbitrage), address(exchanges));
+                uint allowance = arbToken1.allowance(address(bancorArbitrage), aprovee);
                 if (allowance == 0) {
                     // expect arbToken1 to emit the approval event
                     vm.expectEmit(true, true, true, true, address(arbToken1));
-                    emit Approval(address(bancorArbitrage), address(exchanges), approveAmount);
+                    emit Approval(address(bancorArbitrage), aprovee, approveAmount);
                 }
                 vm.stopPrank();
                 executeArbitrageNoApproval(flashloans, routes, userFunded);
