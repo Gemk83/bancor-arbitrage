@@ -18,9 +18,6 @@ contract MockExchanges {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
-    // the address that represents the native token reserve
-    address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
     IERC20 private immutable _weth;
 
     address private immutable _bnt;
@@ -225,7 +222,7 @@ contract MockExchanges {
         uint[] memory amounts = new uint[](2);
         amounts[0] = msg.value;
         amounts[1] = mockSwap(
-            Token(NATIVE_TOKEN_ADDRESS),
+            TokenLibrary.NATIVE_TOKEN,
             Token(path[1]),
             msg.value,
             msg.sender,
@@ -246,7 +243,7 @@ contract MockExchanges {
         amounts[0] = amountIn;
         amounts[1] = mockSwap(
             Token(path[0]),
-            Token(NATIVE_TOKEN_ADDRESS),
+            TokenLibrary.NATIVE_TOKEN,
             amountIn,
             msg.sender,
             deadline,

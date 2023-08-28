@@ -56,7 +56,6 @@ contract BancorArbitrageV2ArbsTest is Test {
     uint private constant DEADLINE = type(uint256).max;
     uint private constant AMOUNT = 1000 ether;
     uint private constant MIN_LIQUIDITY_FOR_TRADING = 1000 ether;
-    address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint private constant FIRST_EXCHANGE_ID = 1;
     uint private constant LAST_EXCHANGE_ID = 7;
 
@@ -139,7 +138,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         // deploy MockExchanges
         exchanges = new MockExchanges(IERC20(weth), address(bnt), 300 ether, true);
         // deploy MockBalancerVault
-        balancerVault = new MockBalancerVault();
+        balancerVault = new MockBalancerVault(300 ether, true);
         // init exchanges struct
         platformStruct = getPlatformStruct(address(exchanges), address(balancerVault));
         // Deploy arbitrage contract
@@ -188,12 +187,12 @@ contract BancorArbitrageV2ArbsTest is Test {
         exchanges.addToWhitelist(address(bnt));
         exchanges.addToWhitelist(address(arbToken1));
         exchanges.addToWhitelist(address(arbToken2));
-        exchanges.addToWhitelist(NATIVE_TOKEN_ADDRESS);
+        exchanges.addToWhitelist(address(TokenLibrary.NATIVE_TOKEN));
         // set pool collections for v3
         exchanges.setCollectionByPool(Token(address(bnt)));
         exchanges.setCollectionByPool(Token(address(arbToken1)));
         exchanges.setCollectionByPool(Token(address(arbToken2)));
-        exchanges.setCollectionByPool(Token(NATIVE_TOKEN_ADDRESS));
+        exchanges.setCollectionByPool(TokenLibrary.NATIVE_TOKEN);
 
         vm.stopPrank();
     }
@@ -206,7 +205,7 @@ contract BancorArbitrageV2ArbsTest is Test {
      */
     function testShouldCorrectlyDistributeRewardsAndProtocolAmounts(bool userFunded) public {
         BancorArbitrage.TradeRoute[] memory routes;
-        address[4] memory tokens = [address(arbToken1), address(arbToken2), NATIVE_TOKEN_ADDRESS, address(bnt)];
+        address[4] memory tokens = [address(arbToken1), address(arbToken2), address(TokenLibrary.NATIVE_TOKEN), address(bnt)];
         // try different flashloan tokens
         for (uint i = 0; i < 4; ++i) {
             // get flashloan data
@@ -269,7 +268,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -693,7 +692,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
         uint approveAmount = type(uint256).max;
 
         // test with all token combinations
@@ -868,7 +867,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -984,7 +983,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -1024,7 +1023,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -1078,7 +1077,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
-        tokensToTrade[2] = NATIVE_TOKEN_ADDRESS;
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
 
         // test with all token combinations
         for (uint i = 0; i < 3; ++i) {
@@ -1230,18 +1229,18 @@ contract BancorArbitrageV2ArbsTest is Test {
             uint16(PlatformId.BANCOR_V2),
             address(arbToken1),
             address(arbToken2),
-            NATIVE_TOKEN_ADDRESS,
+            address(TokenLibrary.NATIVE_TOKEN),
             AMOUNT,
             500
         );
         vm.expectRevert(BancorArbitrage.InvalidETHAmountSent.selector);
-        bancorArbitrage.fundAndArb{ value: AMOUNT - 1 }(routes, Token(NATIVE_TOKEN_ADDRESS), AMOUNT);
+        bancorArbitrage.fundAndArb{ value: AMOUNT - 1 }(routes, TokenLibrary.NATIVE_TOKEN, AMOUNT);
     }
 
     function testShouldRevertNonETHUserArbIfETHIsSent() public {
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
             uint16(PlatformId.BANCOR_V2),
-            NATIVE_TOKEN_ADDRESS,
+            address(TokenLibrary.NATIVE_TOKEN),
             address(arbToken2),
             address(arbToken1),
             AMOUNT,
@@ -1451,7 +1450,7 @@ contract BancorArbitrageV2ArbsTest is Test {
             } else if (i % 3 == 1) {
                 targetToken = address(arbToken2);
             } else {
-                targetToken = NATIVE_TOKEN_ADDRESS;
+                targetToken = address(TokenLibrary.NATIVE_TOKEN);
             }
             data = getCarbonData(currentAmount);
             routes[i] = BancorArbitrage.TradeRoute({

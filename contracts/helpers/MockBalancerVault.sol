@@ -22,42 +22,58 @@ contract MockBalancerVault is IBalancerVault {
     error NotEnoughBalanceForFlashloan();
     error InputLengthMismatch();
 
+    // what amount is added or subtracted to/from the input amount on swap
+    uint private _outputAmount;
+
+    // true if the gain amount is added to the swap input, false if subtracted
+    bool private _profit;
+
     /**
      * @dev Emitted for each individual flash loan performed by `flashLoan`.
      */
     event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
+    constructor(uint initOutputAmount, bool initProfit) {
+        _outputAmount = initOutputAmount;
+        _profit = initProfit;
+    }
+
     receive() external payable {}
 
     function swap(
         SingleSwap memory singleSwap,
-        FundManagement memory funds,
+        FundManagement memory, // funds,
         uint256 limit,
         uint256 deadline
     )
         external
         payable
         override
-        returns (uint256 amountCalculated)
+        returns (uint256)
     {
-        amountCalculated = limit;
+        Token sourceToken = address(singleSwap.assetIn ) != address(0) ? Token(address(singleSwap.assetIn )) : TokenLibrary.NATIVE_TOKEN;
+        Token targetToken = address(singleSwap.assetOut) != address(0) ? Token(address(singleSwap.assetOut)) : TokenLibrary.NATIVE_TOKEN;
+        uint256 amount = singleSwap.amount;
+        address trader = msg.sender;
+        uint minTargetAmount = limit;
 
-        assert(block.timestamp <= deadline);
-        assert(!funds.fromInternalBalance);
-        assert(!funds.toInternalBalance);
+        require(deadline >= block.timestamp, "Swap timeout");
+        require(sourceToken != targetToken, "Invalid swap");
+        require(amount > 0, "Source amount should be > 0");
+        // withdraw source amount
+        sourceToken.safeTransferFrom(trader, address(this), amount);
 
-        if (singleSwap.assetIn != IBalancerAsset(address(0))) {
-            assert(msg.value == 0);
-            Token(address(singleSwap.assetIn)).safeTransferFrom(msg.sender, address(this), singleSwap.amount);
+        // transfer target amount
+        // receive outputAmount tokens per swap
+        uint targetAmount;
+        if (_profit) {
+            targetAmount = amount + _outputAmount;
         } else {
-            assert(msg.value == singleSwap.amount);
+            targetAmount = amount - _outputAmount;
         }
-
-        if (singleSwap.assetOut != IBalancerAsset(address(0))) {
-            Token(address(singleSwap.assetOut)).safeTransfer(msg.sender, amountCalculated);
-        } else {
-            payable(msg.sender).transfer(amountCalculated);
-        }
+        require(targetAmount >= minTargetAmount, "InsufficientTargetAmount");
+        targetToken.safeTransfer(trader, targetAmount);
+        return targetAmount;
     }
 
     /**
