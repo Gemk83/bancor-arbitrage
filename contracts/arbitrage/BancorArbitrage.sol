@@ -706,11 +706,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             });
 
             // perform the trade
-            if (singleSwap.assetIn == IBalancerAsset(address(0))) {
-                router.swap{ value: sourceAmount }(singleSwap, funds, minTargetAmount, deadline);
-            } else {
-                router.swap(singleSwap, funds, minTargetAmount, deadline);
-            }
+            uint256 value = singleSwap.assetIn == IBalancerAsset(address(0)) ? sourceAmount : 0;
+            router.swap{ value: value }(singleSwap, funds, minTargetAmount, deadline);
 
             return;
         }
