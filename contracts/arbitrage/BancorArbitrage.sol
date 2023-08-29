@@ -10,8 +10,9 @@ import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/I
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IWETH } from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
-import { IBalancerVault, IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IFlashLoanRecipient as BalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IVault as IBalancerVault } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IFlashLoanRecipient as IBalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
 
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
@@ -488,7 +489,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         } else if (flashloan.platformId == PLATFORM_ID_BALANCER) {
             // take a flashloan on Balancer, execution continues in `receiveFlashLoan`
             _balancerVault.flashLoan(
-                BalancerFlashloanRecipient(address(this)),
+                IBalancerFlashloanRecipient(address(this)),
                 flashloan.sourceTokens,
                 flashloan.sourceAmounts,
                 data

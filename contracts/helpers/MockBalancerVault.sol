@@ -9,12 +9,12 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
+import { IVault } from "../exchanges/interfaces/IBalancerVault.sol";
 import { IFlashLoanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IBalancerVault, IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
-contract MockBalancerVault is IBalancerVault {
+contract MockBalancerVault is IVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 

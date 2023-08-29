@@ -32,7 +32,7 @@ interface IFlashLoanRecipient {
     ) external;
 }
 
-interface IBalancerVault {
+interface IVault {
     // Swaps
 
     enum SwapKind { GIVEN_IN, GIVEN_OUT }
