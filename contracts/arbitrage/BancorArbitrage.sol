@@ -10,9 +10,9 @@ import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/I
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IWETH } from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
-import { IAsset as IBalancerAsset } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IVault as IBalancerVault } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IFlashLoanRecipient as IBalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IAsset as IBalancerAsset } from "@balancer-labs/v2-interfaces/contracts/vault/IAsset.sol";
+import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { IFlashLoanRecipient as IBalancerFlashloanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
 
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";

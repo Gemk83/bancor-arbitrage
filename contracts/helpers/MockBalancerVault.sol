@@ -9,12 +9,12 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
-import { IVault } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IFlashLoanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { IFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
-contract MockBalancerVault is IVault {
+contract MockBalancerVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
@@ -41,14 +41,13 @@ contract MockBalancerVault is IVault {
     receive() external payable {}
 
     function swap(
-        SingleSwap memory singleSwap,
-        FundManagement memory, // funds,
+        IVault.SingleSwap memory singleSwap,
+        IVault.FundManagement memory, // funds,
         uint256 limit,
         uint256 deadline
     )
         external
         payable
-        override
         returns (uint256)
     {
         Token sourceToken = address(singleSwap.assetIn ) != address(0) ? Token(address(singleSwap.assetIn )) : TokenLibrary.NATIVE_TOKEN;
