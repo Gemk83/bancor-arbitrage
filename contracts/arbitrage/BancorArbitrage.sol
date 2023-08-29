@@ -695,7 +695,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 userData: customData
             });
 
-            // TODO: validate the initialization of this data structure
             IBalancerVault.FundManagement memory funds = IBalancerVault.FundManagement({
                 sender: address(this),
                 fromInternalBalance: false,
