@@ -695,7 +695,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 assetIn: IBalancerAsset(sourceToken.isNative() ? address(0) : address(sourceToken)),
                 assetOut: IBalancerAsset(targetToken.isNative() ? address(0) : address(targetToken)),
                 amount: sourceAmount,
-                userData: customData
+                userData: bytes("") // customData
             });
 
             IBalancerVault.FundManagement memory funds = IBalancerVault.FundManagement({
