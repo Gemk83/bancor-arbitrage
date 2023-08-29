@@ -9,12 +9,16 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
-import { IVault } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IFlashLoanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+
+import {
+    IBalancerVault,
+    IBalancerFlashloanRecipient,
+    castTokens
+} from "../exchanges/interfaces/IBalancer.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
-contract MockBalancerVault is IVault {
+contract MockBalancerVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
@@ -31,7 +35,7 @@ contract MockBalancerVault is IVault {
     /**
      * @dev Emitted for each individual flash loan performed by `flashLoan`.
      */
-    event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
+    event FlashLoan(IBalancerFlashloanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
     constructor(uint initOutputAmount, bool initProfit) {
         _outputAmount = initOutputAmount;
@@ -41,14 +45,13 @@ contract MockBalancerVault is IVault {
     receive() external payable {}
 
     function swap(
-        SingleSwap memory singleSwap,
-        FundManagement memory, // funds,
+        IBalancerVault.SingleSwap memory singleSwap,
+        IBalancerVault.FundManagement memory, // funds,
         uint256 limit,
         uint256 deadline
     )
         external
         payable
-        override
         returns (uint256)
     {
         Token sourceToken = address(singleSwap.assetIn ) != address(0) ? Token(address(singleSwap.assetIn )) : TokenLibrary.NATIVE_TOKEN;
@@ -78,10 +81,10 @@ contract MockBalancerVault is IVault {
 
     /**
      * @dev Handles Flash Loans through the Vault. Calls the `receiveFlashLoan` hook on the flash loan recipient
-     * contract, which implements the `IFlashLoanRecipient` interface.
+     * contract, which implements the `IBalancerFlashloanRecipient` interface.
      */
     function flashLoan(
-        IFlashLoanRecipient recipient,
+        IBalancerFlashloanRecipient recipient,
         IERC20[] memory tokens,
         uint256[] memory amounts,
         bytes memory userData
@@ -106,7 +109,7 @@ contract MockBalancerVault is IVault {
         }
 
         // trigger flashloan callback
-        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);
+        recipient.receiveFlashLoan(castTokens(tokens), amounts, feeAmounts, userData);
 
         // check each of the tokens has been returned with the fee amount
         for (uint256 i = 0; i < tokens.length; ++i) {
