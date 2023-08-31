@@ -47,13 +47,13 @@ contract MockBalancerVault {
         IVault.FundManagement memory, // funds,
         uint256 limit,
         uint256 deadline
-    )
-        external
-        payable
-        returns (uint256)
-    {
-        Token sourceToken = address(singleSwap.assetIn ) != address(0) ? Token(address(singleSwap.assetIn )) : TokenLibrary.NATIVE_TOKEN;
-        Token targetToken = address(singleSwap.assetOut) != address(0) ? Token(address(singleSwap.assetOut)) : TokenLibrary.NATIVE_TOKEN;
+    ) external payable returns (uint256) {
+        Token sourceToken = address(singleSwap.assetIn) != address(0)
+            ? Token(address(singleSwap.assetIn))
+            : TokenLibrary.NATIVE_TOKEN;
+        Token targetToken = address(singleSwap.assetOut) != address(0)
+            ? Token(address(singleSwap.assetOut))
+            : TokenLibrary.NATIVE_TOKEN;
         uint256 amount = singleSwap.amount;
         address trader = msg.sender;
         uint minTargetAmount = limit;

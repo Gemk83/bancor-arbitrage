@@ -205,7 +205,12 @@ contract BancorArbitrageV2ArbsTest is Test {
      */
     function testShouldCorrectlyDistributeRewardsAndProtocolAmounts(bool userFunded) public {
         BancorArbitrage.TradeRoute[] memory routes;
-        address[4] memory tokens = [address(arbToken1), address(arbToken2), address(TokenLibrary.NATIVE_TOKEN), address(bnt)];
+        address[4] memory tokens = [
+            address(arbToken1),
+            address(arbToken2),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(bnt)
+        ];
         // try different flashloan tokens
         for (uint i = 0; i < 4; ++i) {
             // get flashloan data

@@ -317,7 +317,12 @@ contract BancorArbitrageTest is Test {
      */
     function testShouldCorrectlyDistributeRewardsAndProtocolAmounts() public {
         BancorArbitrage.Route[] memory routes;
-        address[4] memory tokens = [address(arbToken1), address(arbToken2), address(TokenLibrary.NATIVE_TOKEN), address(bnt)];
+        address[4] memory tokens = [
+            address(arbToken1),
+            address(arbToken2),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(bnt)
+        ];
         // try different flashloan tokens
         for (uint i = 0; i < 4; ++i) {
             // first and second target tokens must be different from each other and the flashloan token
