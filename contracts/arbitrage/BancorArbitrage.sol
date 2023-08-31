@@ -13,7 +13,7 @@ import { IWETH } from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 import { IAsset as IBalancerAsset } from "@balancer-labs/v2-interfaces/contracts/vault/IAsset.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { IFlashLoanRecipient as IBalancerFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
-import { castTokens as castToBalacerTokens } from "../exchanges/BalancerUtils.sol";
+import { castTokens as castToBalancerTokens } from "../exchanges/BalancerUtils.sol";
 
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
@@ -491,7 +491,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // take a flashloan on Balancer, execution continues in `receiveFlashLoan`
             _balancerVault.flashLoan(
                 IBalancerFlashLoanRecipient(address(this)),
-                castToBalacerTokens(flashloan.sourceTokens),
+                castToBalancerTokens(flashloan.sourceTokens),
                 flashloan.sourceAmounts,
                 data
             );
