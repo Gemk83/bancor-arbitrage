@@ -10,11 +10,9 @@ import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
 
-import {
-    IBalancerVault,
-    IBalancerFlashloanRecipient,
-    castTokens
-} from "../exchanges/interfaces/IBalancer.sol";
+import { IVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { IFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
+import { castTokens } from "../exchanges/BalancerUtils.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
@@ -35,7 +33,7 @@ contract MockBalancerVault {
     /**
      * @dev Emitted for each individual flash loan performed by `flashLoan`.
      */
-    event FlashLoan(IBalancerFlashloanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
+    event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
     constructor(uint initOutputAmount, bool initProfit) {
         _outputAmount = initOutputAmount;
@@ -45,8 +43,8 @@ contract MockBalancerVault {
     receive() external payable {}
 
     function swap(
-        IBalancerVault.SingleSwap memory singleSwap,
-        IBalancerVault.FundManagement memory, // funds,
+        IVault.SingleSwap memory singleSwap,
+        IVault.FundManagement memory, // funds,
         uint256 limit,
         uint256 deadline
     )
@@ -81,10 +79,10 @@ contract MockBalancerVault {
 
     /**
      * @dev Handles Flash Loans through the Vault. Calls the `receiveFlashLoan` hook on the flash loan recipient
-     * contract, which implements the `IBalancerFlashloanRecipient` interface.
+     * contract, which implements the `IFlashLoanRecipient` interface.
      */
     function flashLoan(
-        IBalancerFlashloanRecipient recipient,
+        IFlashLoanRecipient recipient,
         IERC20[] memory tokens,
         uint256[] memory amounts,
         bytes memory userData

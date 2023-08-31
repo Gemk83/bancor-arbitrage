@@ -22,7 +22,7 @@ import { TestWETH } from "../contracts/helpers/TestWETH.sol";
 import { IBancorNetworkV2 } from "../contracts/exchanges/interfaces/IBancorNetworkV2.sol";
 import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/interfaces/IBancorNetwork.sol";
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
-import { IBalancerVault } from "../contracts/exchanges/interfaces/IBalancer.sol";
+import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
