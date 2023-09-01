@@ -10,16 +10,12 @@ import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
 import { IFlashLoanRecipient } from "../exchanges/interfaces/IBancorNetwork.sol";
-import { IFlashLoanRecipient as BalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
 contract MockExchanges {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
-
-    // the address that represents the native token reserve
-    address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     IERC20 private immutable _weth;
 
@@ -224,14 +220,7 @@ contract MockExchanges {
     ) external payable returns (uint[] memory) {
         uint[] memory amounts = new uint[](2);
         amounts[0] = msg.value;
-        amounts[1] = mockSwap(
-            Token(NATIVE_TOKEN_ADDRESS),
-            Token(path[1]),
-            msg.value,
-            msg.sender,
-            deadline,
-            amountOutMin
-        );
+        amounts[1] = mockSwap(TokenLibrary.NATIVE_TOKEN, Token(path[1]), msg.value, msg.sender, deadline, amountOutMin);
         return amounts;
     }
 
@@ -244,14 +233,7 @@ contract MockExchanges {
     ) external returns (uint[] memory) {
         uint[] memory amounts = new uint[](2);
         amounts[0] = amountIn;
-        amounts[1] = mockSwap(
-            Token(path[0]),
-            Token(NATIVE_TOKEN_ADDRESS),
-            amountIn,
-            msg.sender,
-            deadline,
-            amountOutMin
-        );
+        amounts[1] = mockSwap(Token(path[0]), TokenLibrary.NATIVE_TOKEN, amountIn, msg.sender, deadline, amountOutMin);
         return amounts;
     }
 

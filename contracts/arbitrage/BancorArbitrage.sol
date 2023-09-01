@@ -10,8 +10,10 @@ import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/I
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import { IWETH } from "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
-import { IBalancerVault } from "../exchanges/interfaces/IBalancerVault.sol";
-import { IFlashLoanRecipient as BalancerFlashloanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+import { IAsset as IBalancerAsset } from "@balancer-labs/v2-interfaces/contracts/vault/IAsset.sol";
+import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { IFlashLoanRecipient as IBalancerFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
+import { castTokens as castToBalancerTokens } from "../exchanges/BalancerUtils.sol";
 
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
@@ -488,8 +490,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         } else if (flashloan.platformId == PLATFORM_ID_BALANCER) {
             // take a flashloan on Balancer, execution continues in `receiveFlashLoan`
             _balancerVault.flashLoan(
-                BalancerFlashloanRecipient(address(this)),
-                flashloan.sourceTokens,
+                IBalancerFlashLoanRecipient(address(this)),
+                castToBalancerTokens(flashloan.sourceTokens),
                 flashloan.sourceAmounts,
                 data
             );
@@ -675,6 +677,35 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
                 sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
             }
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_BALANCER) {
+            IBalancerVault router = _balancerVault;
+
+            // allow the router to withdraw the source tokens
+            _setPlatformAllowance(sourceToken, address(router), sourceAmount);
+
+            IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
+                poolId: bytes32(customInt),
+                kind: IBalancerVault.SwapKind.GIVEN_IN,
+                assetIn: IBalancerAsset(sourceToken.isNative() ? address(0) : address(sourceToken)),
+                assetOut: IBalancerAsset(targetToken.isNative() ? address(0) : address(targetToken)),
+                amount: sourceAmount,
+                userData: bytes("") // customData
+            });
+
+            IBalancerVault.FundManagement memory funds = IBalancerVault.FundManagement({
+                sender: address(this),
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
+
+            // perform the trade
+            uint256 value = singleSwap.assetIn == IBalancerAsset(address(0)) ? sourceAmount : 0;
+            router.swap{ value: value }(singleSwap, funds, minTargetAmount, deadline);
 
             return;
         }

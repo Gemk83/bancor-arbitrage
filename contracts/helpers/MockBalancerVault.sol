@@ -9,7 +9,10 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
-import { IFlashLoanRecipient } from "../exchanges/interfaces/IBalancerVault.sol";
+
+import { IVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { IFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
+import { castTokens } from "../exchanges/BalancerUtils.sol";
 
 import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
@@ -21,12 +24,58 @@ contract MockBalancerVault {
     error NotEnoughBalanceForFlashloan();
     error InputLengthMismatch();
 
+    // what amount is added or subtracted to/from the input amount on swap
+    uint private _outputAmount;
+
+    // true if the gain amount is added to the swap input, false if subtracted
+    bool private _profit;
+
     /**
      * @dev Emitted for each individual flash loan performed by `flashLoan`.
      */
     event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
+    constructor(uint initOutputAmount, bool initProfit) {
+        _outputAmount = initOutputAmount;
+        _profit = initProfit;
+    }
+
     receive() external payable {}
+
+    function swap(
+        IVault.SingleSwap memory singleSwap,
+        IVault.FundManagement memory, // funds,
+        uint256 limit,
+        uint256 deadline
+    ) external payable returns (uint256) {
+        Token sourceToken = address(singleSwap.assetIn) != address(0)
+            ? Token(address(singleSwap.assetIn))
+            : TokenLibrary.NATIVE_TOKEN;
+        Token targetToken = address(singleSwap.assetOut) != address(0)
+            ? Token(address(singleSwap.assetOut))
+            : TokenLibrary.NATIVE_TOKEN;
+        uint256 amount = singleSwap.amount;
+        address trader = msg.sender;
+        uint minTargetAmount = limit;
+
+        require(deadline >= block.timestamp, "Swap timeout");
+        require(sourceToken != targetToken, "Invalid swap");
+        require(amount > 0, "Source amount should be > 0");
+        // withdraw source amount
+        sourceToken.safeTransferFrom(trader, address(this), amount);
+
+        // transfer target amount
+        // receive outputAmount tokens per swap
+        uint targetAmount;
+        if (_profit) {
+            targetAmount = amount + _outputAmount;
+        } else {
+            targetAmount = amount - _outputAmount;
+        }
+        require(targetAmount >= minTargetAmount, "InsufficientTargetAmount");
+        targetToken.safeTransfer(trader, targetAmount);
+        return targetAmount;
+    }
 
     /**
      * @dev Handles Flash Loans through the Vault. Calls the `receiveFlashLoan` hook on the flash loan recipient
@@ -58,7 +107,7 @@ contract MockBalancerVault {
         }
 
         // trigger flashloan callback
-        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);
+        recipient.receiveFlashLoan(castTokens(tokens), amounts, feeAmounts, userData);
 
         // check each of the tokens has been returned with the fee amount
         for (uint256 i = 0; i < tokens.length; ++i) {
