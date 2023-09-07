@@ -22,6 +22,7 @@ import { IBancorNetworkV2 } from "../contracts/exchanges/interfaces/IBancorNetwo
 import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/interfaces/IBancorNetwork.sol";
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { ICarbonPOL } from "../contracts/exchanges/interfaces/ICarbonPOL.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
@@ -1064,7 +1065,8 @@ contract BancorArbitrageTest is Test {
             uniV3Router: ISwapRouter(_exchanges),
             sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
-            balancerVault: IBalancerVault(_exchanges)
+            balancerVault: IBalancerVault(_exchanges),
+            carbonPOL: ICarbonPOL(_exchanges)
         });
     }
 

@@ -23,6 +23,7 @@ import { Utils, ZeroValue } from "../utility/Utils.sol";
 import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBancorNetwork.sol";
 import { IBancorNetworkV2 } from "../exchanges/interfaces/IBancorNetworkV2.sol";
 import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
+import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
 import { MathEx } from "../utility/MathEx.sol";
 
@@ -44,6 +45,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error InvalidSourceToken();
     error InvalidETHAmountSent();
     error InsufficientBurn();
+    error SourceAmountTooHigh();
+    error SourceTokenMustBeETH();
+    error TargetTokenMustNotBeETH();
 
     // trade args
     struct Route {
@@ -91,6 +95,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         IUniswapV2Router02 sushiswapRouter;
         ICarbonController carbonController;
         IBalancerVault balancerVault;
+        ICarbonPOL carbonPOL;
     }
 
     // platform ids
@@ -101,6 +106,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_SUSHISWAP = 5;
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
+    uint16 public constant PLATFORM_ID_CARBON_POL = 8;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -133,6 +139,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // Balancer Vault
     IBalancerVault internal immutable _balancerVault;
+
+    // Carbon POL contract
+    ICarbonPOL internal immutable _carbonPOL;
 
     // Protocol wallet address
     address internal immutable _protocolWallet;
@@ -186,6 +195,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.sushiswapRouter))
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
+        validAddress(address(platforms.carbonPOL))
     {
         _bnt = initBnt;
         _weth = IERC20(platforms.uniV2Router.WETH());
@@ -197,6 +207,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _sushiSwapRouter = platforms.sushiswapRouter;
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
+        _carbonPOL = platforms.carbonPOL;
     }
 
     /**
@@ -706,6 +717,37 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             uint256 value = singleSwap.assetIn == IBalancerAsset(address(0)) ? sourceAmount : 0;
             router.swap{ value: value }(singleSwap, funds, minTargetAmount, deadline);
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_CARBON_POL) {
+            // Carbon POL accepts 2^128 - 1 max for sourceAmount
+            if (sourceAmount > type(uint128).max) {
+                revert SourceAmountTooHigh();
+            }
+            // Carbon POL accepts 2^128 - 1 max for minTargetAmount
+            if (minTargetAmount > type(uint128).max) {
+                revert MinTargetAmountTooHigh();
+            }
+            // Carbon POL accepts only ETH for sourceToken
+            if (!sourceToken.isNative()) {
+                revert SourceTokenMustBeETH();
+            }
+            // Carbon POL accepts only non-ETH for targetToken
+            if (targetToken.isNative()) {
+                revert TargetTokenMustNotBeETH();
+            }
+
+            // perform the trade
+            _carbonPOL.trade{ value: sourceAmount }(sourceToken, uint128(sourceAmount));
+
+            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
+            if (remainingSourceTokens > 0) {
+                // transfer any remaining source tokens to the protocol wallet
+                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
+                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            }
 
             return;
         }

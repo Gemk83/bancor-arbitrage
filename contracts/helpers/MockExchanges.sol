@@ -197,6 +197,13 @@ contract MockExchanges {
     }
 
     /**
+     * Carbon POL trade
+     */
+    function trade(Token token, uint128 amount) external payable returns (uint128) {
+        return uint128(mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0));
+    }
+
+    /**
      * Uniswap v2 + Sushiswap trades
      */
     function swapExactTokensForTokens(
