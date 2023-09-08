@@ -49,17 +49,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceTokenMustBeETH();
     error TargetTokenMustNotBeETH();
 
-    // trade args
-    struct Route {
-        uint16 platformId;
-        Token targetToken;
-        uint256 minTargetAmount;
-        uint256 deadline;
-        address customAddress;
-        uint256 customInt;
-        bytes customData;
-    }
-
     // trade args v2
     struct TradeRoute {
         uint16 platformId;
@@ -308,28 +297,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      */
     function minBurn() external pure returns (uint256) {
         return 0;
-    }
-
-    /**
-     * @dev execute multi-step arbitrage trade between exchanges using a flashloan from Bancor Network V3
-     * note: deprecated
-     */
-    function flashloanAndArb(Route[] calldata routes, Token token, uint256 sourceAmount) external {
-        // convert route array to new format
-        TradeRoute[] memory routesV2 = _convertRouteV1toV2(routes, token, sourceAmount);
-        // create flashloan struct
-        IERC20[] memory sourceTokens = new IERC20[](1);
-        uint256[] memory sourceAmounts = new uint256[](1);
-        sourceTokens[0] = IERC20(address(token));
-        sourceAmounts[0] = sourceAmount;
-        Flashloan[] memory flashloan = new Flashloan[](1);
-        flashloan[0] = Flashloan({
-            platformId: PLATFORM_ID_BANCOR_V3,
-            sourceTokens: sourceTokens,
-            sourceAmounts: sourceAmounts
-        });
-        // perform arb
-        flashloanAndArbV2(flashloan, routesV2);
     }
 
     /**
@@ -842,40 +809,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         return (tokens, amounts);
-    }
-
-    /**
-     * @dev convert a V1 Route array to V2
-     */
-    function _convertRouteV1toV2(
-        Route[] calldata routes,
-        Token sourceToken,
-        uint256 sourceAmount
-    ) private pure returns (TradeRoute[] memory routesV2) {
-        routesV2 = new TradeRoute[](routes.length);
-        if (routes.length == 0) {
-            return routesV2;
-        }
-        routesV2[0].sourceToken = sourceToken;
-        routesV2[0].sourceAmount = sourceAmount;
-        // set each route details
-        for (uint256 i = 0; i < routes.length; i = uncheckedInc(i)) {
-            Route memory route = routes[i];
-            TradeRoute memory routeV2 = routesV2[i];
-            // copy mutual parts
-            routeV2.platformId = route.platformId;
-            routeV2.targetToken = route.targetToken;
-            routeV2.minTargetAmount = route.minTargetAmount;
-            routeV2.deadline = route.deadline;
-            routeV2.customAddress = route.customAddress;
-            routeV2.customInt = route.customInt;
-            routeV2.customData = route.customData;
-            // set source token and amount
-            if (i != 0) {
-                routeV2.sourceToken = routes[i - 1].targetToken;
-                routeV2.sourceAmount = 0;
-            }
-        }
     }
 
     /**
