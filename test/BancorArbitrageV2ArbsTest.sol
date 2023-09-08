@@ -695,7 +695,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     function testShouldApproveERC20TokensForEachExchange(uint16 platformId, bool userFunded) public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
         // bound to valid exchange ids
-        platformId = uint16(bound(platformId, FIRST_EXCHANGE_ID, LAST_EXCHANGE_ID - 1));
+        platformId = uint16(bound(platformId, FIRST_EXCHANGE_ID, LAST_EXCHANGE_ID));
         address[] memory tokensToTrade = new address[](3);
         tokensToTrade[0] = address(arbToken1);
         tokensToTrade[1] = address(arbToken2);
@@ -717,6 +717,10 @@ contract BancorArbitrageV2ArbsTest is Test {
                     AMOUNT,
                     500
                 );
+                // verify that this is a legal test configuration
+                if (PlatformId(platformId) == PlatformId.CARBON_POL && !isLegalRouteForCarbonPOL(routes)) {
+                    continue;
+                }
                 vm.startPrank(user1);
                 // approve token if user-funded arb
                 if (userFunded) {
@@ -911,13 +915,17 @@ contract BancorArbitrageV2ArbsTest is Test {
         // bound route len from 2 to 10
         routeLength = bound(routeLength, 2, 10);
         // bound exchange id to valid exchange ids
-        platformId = uint16(bound(platformId, FIRST_EXCHANGE_ID, LAST_EXCHANGE_ID - 1));
+        platformId = uint16(bound(platformId, FIRST_EXCHANGE_ID, LAST_EXCHANGE_ID));
         // bound arb amount from 1 to AMOUNT
         arbAmount = bound(arbAmount, 1, AMOUNT);
         // get flashloans
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, arbAmount);
         // get routes
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(routeLength, platformId, fee, arbAmount);
+        // verify that this is a legal test configuration
+        if (PlatformId(platformId) == PlatformId.CARBON_POL && !isLegalRouteForCarbonPOL(routes)) {
+            return;
+        }
         // trade
         executeArbitrage(flashloans, routes, userFunded);
     }
@@ -1853,5 +1861,14 @@ contract BancorArbitrageV2ArbsTest is Test {
     function modifyRouteTargetToken(BancorArbitrage.TradeRoute memory route, address token) public pure {
         route.targetToken = Token(token);
         route.customAddress = token;
+    }
+
+    function isLegalRouteForCarbonPOL(BancorArbitrage.TradeRoute[] memory routes) private pure returns (bool) {
+        for (uint256 i = 0; i < routes.length; i++) {
+            if (!routes[i].sourceToken.isNative() || routes[i].targetToken.isNative()) {
+                return false;
+            }
+        }
+        return true;
     }
 }
