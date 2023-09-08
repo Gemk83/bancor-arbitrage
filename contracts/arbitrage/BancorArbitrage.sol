@@ -693,14 +693,17 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             if (sourceAmount > type(uint128).max) {
                 revert SourceAmountTooHigh();
             }
+
             // Carbon POL accepts 2^128 - 1 max for minTargetAmount
             if (minTargetAmount > type(uint128).max) {
                 revert MinTargetAmountTooHigh();
             }
+
             // Carbon POL accepts only ETH for sourceToken
             if (!sourceToken.isNative()) {
                 revert SourceTokenMustBeETH();
             }
+
             // Carbon POL accepts only non-ETH for targetToken
             if (targetToken.isNative()) {
                 revert TargetTokenMustNotBeETH();
