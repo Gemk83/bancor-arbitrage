@@ -717,8 +717,8 @@ contract BancorArbitrageV2ArbsTest is Test {
                     AMOUNT,
                     500
                 );
-                // verify that this is a legal test configuration
-                if (PlatformId(platformId) == PlatformId.CARBON_POL && !isLegalRouteForCarbonPOL(routes)) {
+                // verify that this is a valid test configuration
+                if (PlatformId(platformId) == PlatformId.CARBON_POL && !IsValidRouteForCarbonPOL(routes)) {
                     continue;
                 }
                 vm.startPrank(user1);
@@ -922,8 +922,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, arbAmount);
         // get routes
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(routeLength, platformId, fee, arbAmount);
-        // verify that this is a legal test configuration
-        if (PlatformId(platformId) == PlatformId.CARBON_POL && !isLegalRouteForCarbonPOL(routes)) {
+        // verify that this is a valid test configuration
+        if (PlatformId(platformId) == PlatformId.CARBON_POL && !IsValidRouteForCarbonPOL(routes)) {
             return;
         }
         // trade
@@ -1863,7 +1863,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         route.customAddress = token;
     }
 
-    function isLegalRouteForCarbonPOL(BancorArbitrage.TradeRoute[] memory routes) private pure returns (bool) {
+    function IsValidRouteForCarbonPOL(BancorArbitrage.TradeRoute[] memory routes) private pure returns (bool) {
         for (uint256 i = 0; i < routes.length; i++) {
             if (!routes[i].sourceToken.isNative() || routes[i].targetToken.isNative()) {
                 return false;
