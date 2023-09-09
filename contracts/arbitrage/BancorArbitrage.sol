@@ -46,8 +46,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error InvalidETHAmountSent();
     error InsufficientBurn();
     error SourceAmountTooHigh();
-    error SourceTokenMustBeETH();
-    error TargetTokenMustNotBeETH();
+    error SourceTokenIsNotETH();
+    error TargetTokenIsETH();
 
     // trade args v2
     struct TradeRoute {
@@ -701,12 +701,12 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
             // Carbon POL accepts only ETH for sourceToken
             if (!sourceToken.isNative()) {
-                revert SourceTokenMustBeETH();
+                revert SourceTokenIsNotETH();
             }
 
             // Carbon POL accepts only non-ETH for targetToken
             if (targetToken.isNative()) {
-                revert TargetTokenMustNotBeETH();
+                revert TargetTokenIsETH();
             }
 
             // perform the trade
