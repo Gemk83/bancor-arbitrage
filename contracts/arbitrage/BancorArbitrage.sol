@@ -713,7 +713,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
 
             // perform the trade
-            _carbonPOL.trade{ value: sourceAmount }(sourceToken, targetAmount);
+            _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
 
             uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
             if (remainingSourceTokens > 0) {
