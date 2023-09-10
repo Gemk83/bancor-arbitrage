@@ -709,8 +709,16 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 revert TargetTokenIsETH();
             }
 
+            // Since Carbon POL accepts only ETH for sourceToken
+            if (sourceAmount != msg.value) {
+                revert InvalidETHAmountSent();
+            }
+
+            // get the expected return
+            uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
+
             // perform the trade
-            _carbonPOL.trade{ value: sourceAmount }(sourceToken, uint128(sourceAmount));
+            _carbonPOL.trade{ value: sourceAmount }(sourceToken, targetAmount);
 
             uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
             if (remainingSourceTokens > 0) {
