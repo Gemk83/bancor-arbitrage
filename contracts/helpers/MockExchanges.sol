@@ -197,6 +197,15 @@ contract MockExchanges {
     }
 
     /**
+     * Carbon POL trade return
+     */
+    function expectedTradeReturn(Token token, uint128 ethAmount) external view returns (uint128 tokenAmount) {
+        this;
+        token;
+        tokenAmount = ethAmount;
+    }
+
+    /**
      * Carbon POL trade
      */
     function trade(Token token, uint128 amount) external payable returns (uint128) {
