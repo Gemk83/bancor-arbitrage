@@ -69,7 +69,8 @@ const BalancerNamedAccounts = {
 const BancorNamedAccounts = {
     bancorNetworkV2: { ...mainnet('0x2F9EC37d6CcFFf1caB21733BdaDEdE11c823cCB0') },
     bancorNetworkV3: { ...mainnet('0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB') },
-    carbonController: { ...mainnet('0xC537e898CD774e2dCBa3B14Ea6f34C93d5eA45e1') }
+    carbonController: { ...mainnet('0xC537e898CD774e2dCBa3B14Ea6f34C93d5eA45e1') },
+    carbonPOL: { ...mainnet('0xD06146D292F9651C1D7cf54A3162791DFc2bEf46') }
 };
 
 export const NamedAccounts = {
