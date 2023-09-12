@@ -13,7 +13,7 @@ interface ICarbonPOL {
     function expectedTradeReturn(Token token, uint128 ethAmount) external view returns (uint128 tokenAmount);
 
     /**
-     * @notice trades ETH for *amount* of token based on the current token price (trade by source amount)
+     * @notice trades ETH for *amount* of token based on the current token price (trade by target amount)
      */
     function trade(Token token, uint128 amount) external payable;
 }
