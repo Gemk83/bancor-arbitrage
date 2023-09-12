@@ -235,7 +235,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 5;
+        return 6;
     }
 
     /**
@@ -290,14 +290,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      */
     function rewards() external view returns (Rewards memory) {
         return _rewards;
-    }
-
-    /**
-     * @dev returns the min bnt burn amount
-     * note: deprecated
-     */
-    function minBurn() external pure returns (uint256) {
-        return 0;
     }
 
     /**
