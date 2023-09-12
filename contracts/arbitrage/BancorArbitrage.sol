@@ -42,6 +42,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error InvalidFlashloanFormat();
     error InvalidFlashLoanCaller();
     error MinTargetAmountTooHigh();
+    error MinTargetAmountNotReached();
     error InvalidSourceToken();
     error InvalidETHAmountSent();
     error InsufficientBurn();
@@ -694,11 +695,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 revert SourceAmountTooHigh();
             }
 
-            // Carbon POL accepts 2^128 - 1 max for minTargetAmount
-            if (minTargetAmount > type(uint128).max) {
-                revert MinTargetAmountTooHigh();
-            }
-
             // Carbon POL accepts only ETH for sourceToken
             if (!sourceToken.isNative()) {
                 revert SourceTokenIsNotETH();
@@ -711,6 +707,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
             // get the expected return
             uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
+
+            // verify the expected return
+            if (targetAmount >= minTargetAmount) {
+                revert MinTargetAmountNotReached();
+            }
 
             // perform the trade
             _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
