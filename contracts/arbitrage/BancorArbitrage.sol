@@ -709,7 +709,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
 
             // verify the expected return
-            if (targetAmount >= minTargetAmount) {
+            if (targetAmount < minTargetAmount) {
                 revert MinTargetAmountNotReached();
             }
 
