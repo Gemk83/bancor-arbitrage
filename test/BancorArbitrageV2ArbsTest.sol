@@ -23,6 +23,7 @@ import { IBancorNetworkV2 } from "../contracts/exchanges/interfaces/IBancorNetwo
 import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/interfaces/IBancorNetwork.sol";
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+import { ICarbonPOL } from "../contracts/exchanges/interfaces/ICarbonPOL.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
@@ -57,7 +58,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     uint private constant AMOUNT = 1000 ether;
     uint private constant MIN_LIQUIDITY_FOR_TRADING = 1000 ether;
     uint private constant FIRST_EXCHANGE_ID = 1;
-    uint private constant LAST_EXCHANGE_ID = 7;
+    uint private constant LAST_EXCHANGE_ID = 8;
 
     enum PlatformId {
         INVALID,
@@ -67,7 +68,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         UNISWAP_V3,
         SUSHISWAP,
         CARBON,
-        BALANCER
+        BALANCER,
+        CARBON_POL
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
@@ -715,6 +717,10 @@ contract BancorArbitrageV2ArbsTest is Test {
                     AMOUNT,
                     500
                 );
+                // verify that this is a valid test configuration
+                if (!isValidTestConfiguration(platformId, routes)) {
+                    continue;
+                }
                 vm.startPrank(user1);
                 // approve token if user-funded arb
                 if (userFunded) {
@@ -916,6 +922,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, arbAmount);
         // get routes
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(routeLength, platformId, fee, arbAmount);
+        // verify that this is a valid test configuration
+        if (!isValidTestConfiguration(platformId, routes)) {
+            return;
+        }
         // trade
         executeArbitrage(flashloans, routes, userFunded);
     }
@@ -1840,7 +1850,8 @@ contract BancorArbitrageV2ArbsTest is Test {
             uniV3Router: ISwapRouter(_exchanges),
             sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
-            balancerVault: IBalancerVault(_balancerVault)
+            balancerVault: IBalancerVault(_balancerVault),
+            carbonPOL: ICarbonPOL(_exchanges)
         });
     }
 
@@ -1850,5 +1861,17 @@ contract BancorArbitrageV2ArbsTest is Test {
     function modifyRouteTargetToken(BancorArbitrage.TradeRoute memory route, address token) public pure {
         route.targetToken = Token(token);
         route.customAddress = token;
+    }
+
+    function isValidTestConfiguration(
+        uint16 platformId,
+        BancorArbitrage.TradeRoute[] memory routes
+    ) private pure returns (bool) {
+        if (PlatformId(platformId) == PlatformId.CARBON_POL) {
+            if (!routes[1].sourceToken.isNative() || routes[1].targetToken.isNative()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

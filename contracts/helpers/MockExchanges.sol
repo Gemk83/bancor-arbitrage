@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
@@ -15,6 +16,7 @@ import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 
 contract MockExchanges {
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
     using TokenLibrary for Token;
 
     IERC20 private immutable _weth;
@@ -194,6 +196,24 @@ contract MockExchanges {
             sourceAmount += uint128(tradeActions[i].amount);
         }
         return uint128(mockSwap(sourceToken, targetToken, sourceAmount, msg.sender, deadline, minReturn));
+    }
+
+    /**
+     * Carbon POL trade return
+     */
+    function expectedTradeReturn(Token /* token */, uint128 ethAmount) external view returns (uint128 tokenAmount) {
+        if (_profit) {
+            tokenAmount = (ethAmount + _outputAmount).toUint128();
+        } else {
+            tokenAmount = (ethAmount - _outputAmount).toUint128();
+        }
+    }
+
+    /**
+     * Carbon POL trade
+     */
+    function trade(Token token, uint128 amount) external payable returns (uint128) {
+        return mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0).toUint128();
     }
 
     /**

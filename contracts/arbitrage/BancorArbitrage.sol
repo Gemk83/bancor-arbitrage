@@ -23,6 +23,7 @@ import { Utils, ZeroValue } from "../utility/Utils.sol";
 import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBancorNetwork.sol";
 import { IBancorNetworkV2 } from "../exchanges/interfaces/IBancorNetworkV2.sol";
 import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
+import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
 import { MathEx } from "../utility/MathEx.sol";
 
@@ -41,20 +42,13 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error InvalidFlashloanFormat();
     error InvalidFlashLoanCaller();
     error MinTargetAmountTooHigh();
+    error MinTargetAmountNotReached();
     error InvalidSourceToken();
     error InvalidETHAmountSent();
     error InsufficientBurn();
-
-    // trade args
-    struct Route {
-        uint16 platformId;
-        Token targetToken;
-        uint256 minTargetAmount;
-        uint256 deadline;
-        address customAddress;
-        uint256 customInt;
-        bytes customData;
-    }
+    error SourceAmountTooHigh();
+    error SourceTokenIsNotETH();
+    error TargetTokenIsETH();
 
     // trade args v2
     struct TradeRoute {
@@ -91,6 +85,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         IUniswapV2Router02 sushiswapRouter;
         ICarbonController carbonController;
         IBalancerVault balancerVault;
+        ICarbonPOL carbonPOL;
     }
 
     // platform ids
@@ -101,6 +96,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_SUSHISWAP = 5;
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
+    uint16 public constant PLATFORM_ID_CARBON_POL = 8;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -133,6 +129,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // Balancer Vault
     IBalancerVault internal immutable _balancerVault;
+
+    // Carbon POL contract
+    ICarbonPOL internal immutable _carbonPOL;
 
     // Protocol wallet address
     address internal immutable _protocolWallet;
@@ -186,6 +185,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.sushiswapRouter))
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
+        validAddress(address(platforms.carbonPOL))
     {
         _bnt = initBnt;
         _weth = IERC20(platforms.uniV2Router.WETH());
@@ -197,6 +197,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _sushiSwapRouter = platforms.sushiswapRouter;
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
+        _carbonPOL = platforms.carbonPOL;
     }
 
     /**
@@ -234,7 +235,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 5;
+        return 6;
     }
 
     /**
@@ -289,36 +290,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      */
     function rewards() external view returns (Rewards memory) {
         return _rewards;
-    }
-
-    /**
-     * @dev returns the min bnt burn amount
-     * note: deprecated
-     */
-    function minBurn() external pure returns (uint256) {
-        return 0;
-    }
-
-    /**
-     * @dev execute multi-step arbitrage trade between exchanges using a flashloan from Bancor Network V3
-     * note: deprecated
-     */
-    function flashloanAndArb(Route[] calldata routes, Token token, uint256 sourceAmount) external {
-        // convert route array to new format
-        TradeRoute[] memory routesV2 = _convertRouteV1toV2(routes, token, sourceAmount);
-        // create flashloan struct
-        IERC20[] memory sourceTokens = new IERC20[](1);
-        uint256[] memory sourceAmounts = new uint256[](1);
-        sourceTokens[0] = IERC20(address(token));
-        sourceAmounts[0] = sourceAmount;
-        Flashloan[] memory flashloan = new Flashloan[](1);
-        flashloan[0] = Flashloan({
-            platformId: PLATFORM_ID_BANCOR_V3,
-            sourceTokens: sourceTokens,
-            sourceAmounts: sourceAmounts
-        });
-        // perform arb
-        flashloanAndArbV2(flashloan, routesV2);
     }
 
     /**
@@ -710,6 +681,43 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
+        if (platformId == PLATFORM_ID_CARBON_POL) {
+            // Carbon POL accepts 2^128 - 1 max for sourceAmount
+            if (sourceAmount > type(uint128).max) {
+                revert SourceAmountTooHigh();
+            }
+
+            // Carbon POL accepts only ETH for sourceToken
+            if (!sourceToken.isNative()) {
+                revert SourceTokenIsNotETH();
+            }
+
+            // Carbon POL accepts only non-ETH for targetToken
+            if (targetToken.isNative()) {
+                revert TargetTokenIsETH();
+            }
+
+            // get the expected return
+            uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
+
+            // verify the expected return
+            if (targetAmount < minTargetAmount) {
+                revert MinTargetAmountNotReached();
+            }
+
+            // perform the trade
+            _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
+
+            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
+            if (remainingSourceTokens > 0) {
+                // transfer any remaining source tokens to the protocol wallet
+                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
+                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            }
+
+            return;
+        }
+
         revert InvalidTradePlatformId();
     }
 
@@ -800,40 +808,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         return (tokens, amounts);
-    }
-
-    /**
-     * @dev convert a V1 Route array to V2
-     */
-    function _convertRouteV1toV2(
-        Route[] calldata routes,
-        Token sourceToken,
-        uint256 sourceAmount
-    ) private pure returns (TradeRoute[] memory routesV2) {
-        routesV2 = new TradeRoute[](routes.length);
-        if (routes.length == 0) {
-            return routesV2;
-        }
-        routesV2[0].sourceToken = sourceToken;
-        routesV2[0].sourceAmount = sourceAmount;
-        // set each route details
-        for (uint256 i = 0; i < routes.length; i = uncheckedInc(i)) {
-            Route memory route = routes[i];
-            TradeRoute memory routeV2 = routesV2[i];
-            // copy mutual parts
-            routeV2.platformId = route.platformId;
-            routeV2.targetToken = route.targetToken;
-            routeV2.minTargetAmount = route.minTargetAmount;
-            routeV2.deadline = route.deadline;
-            routeV2.customAddress = route.customAddress;
-            routeV2.customInt = route.customInt;
-            routeV2.customData = route.customData;
-            // set source token and amount
-            if (i != 0) {
-                routeV2.sourceToken = routes[i - 1].targetToken;
-                routeV2.sourceAmount = 0;
-            }
-        }
     }
 
     /**
