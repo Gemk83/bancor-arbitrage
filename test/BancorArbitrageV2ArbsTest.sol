@@ -67,10 +67,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         UNISWAP_V2,
         UNISWAP_V3,
         SUSHISWAP,
-        PANCAKE,
         CARBON,
         BALANCER,
-        CARBON_POL
+        CARBON_POL,
+        PANCAKE
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
