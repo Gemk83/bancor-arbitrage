@@ -83,6 +83,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         IUniswapV2Router02 uniV2Router;
         ISwapRouter uniV3Router;
         IUniswapV2Router02 sushiswapRouter;
+        IUniswapV2Router02 pancakeRouter;
         ICarbonController carbonController;
         IBalancerVault balancerVault;
         ICarbonPOL carbonPOL;
@@ -97,6 +98,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
+    uint16 public constant PLATFORM_ID_PANCAKE = 9;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -123,6 +125,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // sushiSwap router contract
     IUniswapV2Router02 internal immutable _sushiSwapRouter;
+
+    // pancake router contract
+    IUniswapV2Router02 internal immutable _pancakeRouter;
 
     // Carbon controller contract
     ICarbonController internal immutable _carbonController;
@@ -183,6 +188,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.uniV2Router))
         validAddress(address(platforms.uniV3Router))
         validAddress(address(platforms.sushiswapRouter))
+        validAddress(address(platforms.pancakeRouter))
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
         validAddress(address(platforms.carbonPOL))
@@ -195,6 +201,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _uniswapV2Router = platforms.uniV2Router;
         _uniswapV3Router = platforms.uniV3Router;
         _sushiSwapRouter = platforms.sushiswapRouter;
+        _pancakeRouter = platforms.pancakeRouter;
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
@@ -235,7 +242,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 6;
+        return 7;
     }
 
     /**
@@ -560,8 +567,20 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
-        if (platformId == PLATFORM_ID_UNISWAP_V2 || platformId == PLATFORM_ID_SUSHISWAP) {
-            IUniswapV2Router02 router = platformId == PLATFORM_ID_UNISWAP_V2 ? _uniswapV2Router : _sushiSwapRouter;
+        if (
+            platformId == PLATFORM_ID_UNISWAP_V2 ||
+            platformId == PLATFORM_ID_SUSHISWAP ||
+            platformId == PLATFORM_ID_PANCAKE
+        ) {
+            IUniswapV2Router02 router;
+
+            if (platformId == PLATFORM_ID_UNISWAP_V2) {
+                router = _uniswapV2Router;
+            } else if (platformId == PLATFORM_ID_SUSHISWAP) {
+                router = _sushiSwapRouter;
+            } else {
+                router = _pancakeRouter;
+            }
 
             // allow the router to withdraw the source tokens
             _setPlatformAllowance(sourceToken, address(router), sourceAmount);

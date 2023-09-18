@@ -62,6 +62,11 @@ const SushiSwapNamedAccounts = {
     sushiSwapFactory: { ...mainnet('0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac') }
 };
 
+const PancakeNamedAccounts = {
+    pancakeRouter: { ...mainnet('0xEfF92A263d31888d860bD50809A8D171709b7b1c') },
+    pancakeFactory: { ...mainnet('0x1097053Fd2ea711dad45caCcc45EfF7548fCB362') }
+};
+
 const BalancerNamedAccounts = {
     balancerVault: { ...mainnet('0xBA12222222228d8Ba445958a75a0704d566BF2C8') }
 };
@@ -89,6 +94,7 @@ export const NamedAccounts = {
     ...TestNamedAccounts,
     ...UniswapNamedAccounts,
     ...SushiSwapNamedAccounts,
+    ...PancakeNamedAccounts,
     ...BalancerNamedAccounts,
     ...BancorNamedAccounts
 };

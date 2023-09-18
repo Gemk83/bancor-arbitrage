@@ -217,7 +217,7 @@ contract MockExchanges {
     }
 
     /**
-     * Uniswap v2 + Sushiswap trades
+     * Uniswap v2 + Sushiswap + pancake trades
      */
     function swapExactTokensForTokens(
         uint amountIn,

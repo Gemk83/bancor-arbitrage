@@ -67,6 +67,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         UNISWAP_V2,
         UNISWAP_V3,
         SUSHISWAP,
+        PANCAKE,
         CARBON,
         BALANCER,
         CARBON_POL
@@ -1849,6 +1850,7 @@ contract BancorArbitrageV2ArbsTest is Test {
             uniV2Router: IUniswapV2Router02(_exchanges),
             uniV3Router: ISwapRouter(_exchanges),
             sushiswapRouter: IUniswapV2Router02(_exchanges),
+            pancakeRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
             carbonPOL: ICarbonPOL(_exchanges)
