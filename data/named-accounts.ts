@@ -63,8 +63,9 @@ const SushiSwapNamedAccounts = {
 };
 
 const PancakeNamedAccounts = {
-    pancakeRouter: { ...mainnet('0xEfF92A263d31888d860bD50809A8D171709b7b1c') },
-    pancakeFactory: { ...mainnet('0x1097053Fd2ea711dad45caCcc45EfF7548fCB362') }
+    pancakeV3Router: { ...mainnet('0x1b81D678ffb9C0263b24A97847620C99d213eB14') },
+    pancakeV2Router: { ...mainnet('0xEfF92A263d31888d860bD50809A8D171709b7b1c') },
+    pancakeV2Factory: { ...mainnet('0x1097053Fd2ea711dad45caCcc45EfF7548fCB362') }
 };
 
 const BalancerNamedAccounts = {

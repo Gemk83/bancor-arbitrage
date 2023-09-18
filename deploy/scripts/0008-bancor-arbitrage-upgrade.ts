@@ -9,7 +9,8 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         uniswapV2Router02,
         uniswapV3Router,
         sushiSwapRouter,
-        pancakeRouter,
+        pancakeV2Router,
+        pancakeV3Router,
         bnt,
         protocolWallet,
         bancorNetworkV2,
@@ -25,7 +26,8 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         uniV2Router: uniswapV2Router02,
         uniV3Router: uniswapV3Router,
         sushiswapRouter: sushiSwapRouter,
-        pancakeRouter: pancakeRouter,
+        pancakeV2Router: pancakeV2Router,
+        pancakeV3Router: pancakeV3Router,
         carbonController,
         balancerVault,
         carbonPOL
@@ -57,7 +59,8 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
                         uniV2Router: mockExchanges.address,
                         uniV3Router: mockExchanges.address,
                         sushiswapRouter: mockExchanges.address,
-                        pancakeRouter: mockExchanges.address,
+                        pancakeV2Router: mockExchanges.address,
+                        pancakeV3Router: mockExchanges.address,
                         carbonController: mockExchanges.address,
                         balancerVault: mockBalancerVault.address
                     }

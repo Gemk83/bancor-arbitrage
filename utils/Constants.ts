@@ -49,7 +49,8 @@ export enum ExchangeId {
     Carbon = 6,
     Balancer = 7,
     CarbonPOL = 8,
-    Pancake = 9
+    PancakeV2 = 9,
+    PancakeV3 = 10
 }
 
 export const EXP2_INPUT_TOO_HIGH = new Decimal(16).div(new Decimal(2).ln());

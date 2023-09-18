@@ -83,7 +83,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         IUniswapV2Router02 uniV2Router;
         ISwapRouter uniV3Router;
         IUniswapV2Router02 sushiswapRouter;
-        IUniswapV2Router02 pancakeRouter;
+        IUniswapV2Router02 pancakeV2Router;
+        ISwapRouter pancakeV3Router;
         ICarbonController carbonController;
         IBalancerVault balancerVault;
         ICarbonPOL carbonPOL;
@@ -98,7 +99,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
-    uint16 public constant PLATFORM_ID_PANCAKE = 9;
+    uint16 public constant PLATFORM_ID_PANCAKE_V2 = 9;
+    uint16 public constant PLATFORM_ID_PANCAKE_V3 = 10;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -126,8 +128,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     // sushiSwap router contract
     IUniswapV2Router02 internal immutable _sushiSwapRouter;
 
-    // pancake router contract
-    IUniswapV2Router02 internal immutable _pancakeRouter;
+    // pancake v2 router contract
+    IUniswapV2Router02 internal immutable _pancakeV2Router;
+
+    // pancake v3 router contract
+    ISwapRouter internal immutable _pancakeV3Router;
 
     // Carbon controller contract
     ICarbonController internal immutable _carbonController;
@@ -188,7 +193,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.uniV2Router))
         validAddress(address(platforms.uniV3Router))
         validAddress(address(platforms.sushiswapRouter))
-        validAddress(address(platforms.pancakeRouter))
+        validAddress(address(platforms.pancakeV2Router))
+        validAddress(address(platforms.pancakeV3Router))
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
         validAddress(address(platforms.carbonPOL))
@@ -201,7 +207,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _uniswapV2Router = platforms.uniV2Router;
         _uniswapV3Router = platforms.uniV3Router;
         _sushiSwapRouter = platforms.sushiswapRouter;
-        _pancakeRouter = platforms.pancakeRouter;
+        _pancakeV2Router = platforms.pancakeV2Router;
+        _pancakeV3Router = platforms.pancakeV3Router;
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
@@ -570,7 +577,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         if (
             platformId == PLATFORM_ID_UNISWAP_V2 ||
             platformId == PLATFORM_ID_SUSHISWAP ||
-            platformId == PLATFORM_ID_PANCAKE
+            platformId == PLATFORM_ID_PANCAKE_V2
         ) {
             IUniswapV2Router02 router;
 
@@ -579,7 +586,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             } else if (platformId == PLATFORM_ID_SUSHISWAP) {
                 router = _sushiSwapRouter;
             } else {
-                router = _pancakeRouter;
+                router = _pancakeV2Router;
             }
 
             // allow the router to withdraw the source tokens
@@ -606,7 +613,15 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
-        if (platformId == PLATFORM_ID_UNISWAP_V3) {
+        if (platformId == PLATFORM_ID_UNISWAP_V3 || platformId == PLATFORM_ID_PANCAKE_V3) {
+            ISwapRouter router;
+
+            if (platformId == PLATFORM_ID_UNISWAP_V3) {
+                router = _uniswapV3Router;
+            } else {
+                router = _pancakeV3Router;
+            }
+
             address tokenIn = sourceToken.isNative() ? address(_weth) : address(sourceToken);
             address tokenOut = targetToken.isNative() ? address(_weth) : address(targetToken);
 

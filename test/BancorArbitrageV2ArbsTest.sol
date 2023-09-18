@@ -70,7 +70,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         CARBON,
         BALANCER,
         CARBON_POL,
-        PANCAKE
+        PANCAKE_V2,
+        PANCAKE_V3
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
@@ -1850,7 +1851,8 @@ contract BancorArbitrageV2ArbsTest is Test {
             uniV2Router: IUniswapV2Router02(_exchanges),
             uniV3Router: ISwapRouter(_exchanges),
             sushiswapRouter: IUniswapV2Router02(_exchanges),
-            pancakeRouter: IUniswapV2Router02(_exchanges),
+            pancakeV2Router: IUniswapV2Router02(_exchanges),
+            pancakeV3Router: ISwapRouter(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
             carbonPOL: ICarbonPOL(_exchanges)
