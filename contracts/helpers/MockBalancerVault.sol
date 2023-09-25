@@ -4,18 +4,14 @@ pragma solidity 0.8.19;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
-import { BancorArbitrage } from "../arbitrage/BancorArbitrage.sol";
 
 import { IVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { IFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
 import { castTokens } from "../exchanges/BalancerUtils.sol";
 
-import { TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
-
+// disable
 contract MockBalancerVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
@@ -25,7 +21,7 @@ contract MockBalancerVault {
     error InputLengthMismatch();
 
     // what amount is added or subtracted to/from the input amount on swap
-    uint private _outputAmount;
+    uint256 private _outputAmount;
 
     // true if the gain amount is added to the swap input, false if subtracted
     bool private _profit;
@@ -35,7 +31,7 @@ contract MockBalancerVault {
      */
     event FlashLoan(IFlashLoanRecipient indexed recipient, IERC20 indexed token, uint256 amount, uint256 feeAmount);
 
-    constructor(uint initOutputAmount, bool initProfit) {
+    constructor(uint256 initOutputAmount, bool initProfit) {
         _outputAmount = initOutputAmount;
         _profit = initProfit;
     }
@@ -56,8 +52,9 @@ contract MockBalancerVault {
             : TokenLibrary.NATIVE_TOKEN;
         uint256 amount = singleSwap.amount;
         address trader = msg.sender;
-        uint minTargetAmount = limit;
+        uint256 minTargetAmount = limit;
 
+        /* solhint-disable custom-errors */
         require(deadline >= block.timestamp, "Swap timeout");
         require(sourceToken != targetToken, "Invalid swap");
         require(amount > 0, "Source amount should be > 0");
@@ -66,13 +63,14 @@ contract MockBalancerVault {
 
         // transfer target amount
         // receive outputAmount tokens per swap
-        uint targetAmount;
+        uint256 targetAmount;
         if (_profit) {
             targetAmount = amount + _outputAmount;
         } else {
             targetAmount = amount - _outputAmount;
         }
         require(targetAmount >= minTargetAmount, "InsufficientTargetAmount");
+        /* solhint-enable custom-errors */
         targetToken.safeTransfer(trader, targetAmount);
         return targetAmount;
     }

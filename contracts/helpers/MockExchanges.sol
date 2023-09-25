@@ -24,7 +24,7 @@ contract MockExchanges {
     address private immutable _bnt;
 
     // what amount is added or subtracted to/from the input amount on swap
-    uint private _outputAmount;
+    uint256 private _outputAmount;
 
     // true if the gain amount is added to the swap input, false if subtracted
     bool private _profit;
@@ -44,7 +44,7 @@ contract MockExchanges {
      */
     event FlashLoanCompleted(Token indexed token, address indexed borrower, uint256 amount, uint256 feeAmount);
 
-    constructor(IERC20 weth, address bnt, uint initOutputAmount, bool initProfit) {
+    constructor(IERC20 weth, address bnt, uint256 initOutputAmount, bool initProfit) {
         _weth = weth;
         _bnt = bnt;
         _outputAmount = initOutputAmount;
@@ -58,7 +58,7 @@ contract MockExchanges {
         return _weth;
     }
 
-    function outputAmount() external view returns (uint) {
+    function outputAmount() external view returns (uint256) {
         return _outputAmount;
     }
 
@@ -74,9 +74,9 @@ contract MockExchanges {
         if (!isWhitelisted[address(token)]) {
             revert NotWhitelisted();
         }
-        uint feeAmount = 0;
-        uint prevBalance = token.balanceOf(address(this));
-        uint prevWethBalance = _weth.balanceOf(address(this));
+        uint256 feeAmount = 0;
+        uint256 prevBalance = token.balanceOf(address(this));
+        uint256 prevWethBalance = _weth.balanceOf(address(this));
 
         // transfer funds to flashloan recipient
         token.safeTransfer(payable(address(recipient)), amount);
@@ -90,9 +90,9 @@ contract MockExchanges {
             data,
             (BancorArbitrage.Flashloan[], BancorArbitrage.TradeRoute[])
         );
-        uint swapCount = address(token) == _bnt ? routes.length : routes.length + 1;
-        uint gain = swapCount * _outputAmount;
-        uint expectedBalance;
+        uint256 swapCount = address(token) == _bnt ? routes.length : routes.length + 1;
+        uint256 gain = swapCount * _outputAmount;
+        uint256 expectedBalance;
         if (_profit) {
             expectedBalance = prevBalance - gain;
         } else {
@@ -100,8 +100,8 @@ contract MockExchanges {
         }
         // account for weth gains if token is native (uni v3 swaps convert eth to weth)
         if (token.isNative()) {
-            uint wethBalance = _weth.balanceOf(address(this));
-            uint wethGain = wethBalance - prevWethBalance;
+            uint256 wethBalance = _weth.balanceOf(address(this));
+            uint256 wethGain = wethBalance - prevWethBalance;
             expectedBalance -= wethGain;
         }
 
@@ -192,7 +192,7 @@ contract MockExchanges {
     ) external payable returns (uint128) {
         // calculate total source amount from individual trade actions
         uint256 sourceAmount = 0;
-        for (uint i = 0; i < tradeActions.length; ++i) {
+        for (uint256 i = 0; i < tradeActions.length; ++i) {
             sourceAmount += uint128(tradeActions[i].amount);
         }
         return uint128(mockSwap(sourceToken, targetToken, sourceAmount, msg.sender, deadline, minReturn));
@@ -220,38 +220,38 @@ contract MockExchanges {
      * Uniswap v2 + Sushiswap trades
      */
     function swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address /* to */,
-        uint deadline
-    ) external returns (uint[] memory) {
-        uint[] memory amounts = new uint[](2);
+        uint256 deadline
+    ) external returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = mockSwap(Token(path[0]), Token(path[1]), amountIn, msg.sender, deadline, amountOutMin);
         return amounts;
     }
 
     function swapExactETHForTokens(
-        uint amountOutMin,
+        uint256 amountOutMin,
         address[] calldata path,
         address /* to */,
-        uint deadline
-    ) external payable returns (uint[] memory) {
-        uint[] memory amounts = new uint[](2);
+        uint256 deadline
+    ) external payable returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = msg.value;
         amounts[1] = mockSwap(TokenLibrary.NATIVE_TOKEN, Token(path[1]), msg.value, msg.sender, deadline, amountOutMin);
         return amounts;
     }
 
     function swapExactTokensForETH(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address /* to */,
-        uint deadline
-    ) external returns (uint[] memory) {
-        uint[] memory amounts = new uint[](2);
+        uint256 deadline
+    ) external returns (uint256[] memory) {
+        uint256[] memory amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = mockSwap(Token(path[0]), TokenLibrary.NATIVE_TOKEN, amountIn, msg.sender, deadline, amountOutMin);
         return amounts;
@@ -277,9 +277,10 @@ contract MockExchanges {
         Token targetToken,
         uint256 amount,
         address trader,
-        uint deadline,
-        uint minTargetAmount
+        uint256 deadline,
+        uint256 minTargetAmount
     ) private returns (uint256) {
+        /* solhint-disable custom-errors */
         require(deadline >= block.timestamp, "Swap timeout");
         require(sourceToken != targetToken, "Invalid swap");
         require(amount > 0, "Source amount should be > 0");
@@ -288,13 +289,14 @@ contract MockExchanges {
 
         // transfer target amount
         // receive outputAmount tokens per swap
-        uint targetAmount;
+        uint256 targetAmount;
         if (_profit) {
             targetAmount = amount + _outputAmount;
         } else {
             targetAmount = amount - _outputAmount;
         }
         require(targetAmount >= minTargetAmount, "InsufficientTargetAmount");
+        /* solhint-enable custom-errors */
         targetToken.safeTransfer(trader, targetAmount);
         return targetAmount;
     }
