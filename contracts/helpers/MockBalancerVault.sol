@@ -11,7 +11,6 @@ import { IVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol"
 import { IFlashLoanRecipient } from "@balancer-labs/v2-interfaces/contracts/vault/IFlashLoanRecipient.sol";
 import { castTokens } from "../exchanges/BalancerUtils.sol";
 
-// disable
 contract MockBalancerVault {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
