@@ -6,9 +6,6 @@ import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-
 import { Token } from "../contracts/token/Token.sol";
 import { TokenLibrary } from "../contracts/token/TokenLibrary.sol";
 import { ZeroValue } from "../contracts/utility/Utils.sol";
@@ -1399,7 +1396,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](3);
 
-        uint customFee = 0;
+        uint256 customFee = 0;
         address customAddress = token2;
         // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
         if (platformId == uint16(PlatformId.UNISWAP_V3_FORK)) {
@@ -1477,7 +1474,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](routeLength);
 
-        uint customFee = 0;
+        uint256 customFee = 0;
         // custom address should be the exchange for all uni v2/v3 forks
         address customAddress = address(exchanges);
         // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
