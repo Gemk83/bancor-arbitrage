@@ -64,8 +64,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         INVALID,
         BANCOR_V2,
         BANCOR_V3,
-        UNISWAP_V2,
-        UNISWAP_V3,
+        UNISWAP_V2_FORK,
+        UNISWAP_V3_FORK,
         SUSHISWAP,
         CARBON,
         BALANCER,
@@ -144,7 +144,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         // init exchanges struct
         platformStruct = getPlatformStruct(address(exchanges), address(balancerVault));
         // Deploy arbitrage contract
-        bancorArbitrage = new BancorArbitrage(bnt, protocolWallet, platformStruct);
+        bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
 
         bytes memory selector = abi.encodeWithSelector(bancorArbitrage.initialize.selector);
 
@@ -369,7 +369,12 @@ contract BancorArbitrageV2ArbsTest is Test {
         amounts[1] = AMOUNT;
         BancorArbitrage.Flashloan[] memory flashloans = getFlashloanDataForV3(tokens, amounts);
         // get routes
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(3, uint16(PlatformId.UNISWAP_V3), 0, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(
+            3,
+            uint16(PlatformId.UNISWAP_V3_FORK),
+            0,
+            AMOUNT
+        );
         // expect two flashloan events are emitted from the flashloan source (bancor v3)
         vm.expectEmit(true, true, true, true);
         emit FlashLoanCompleted(Token(address(arbToken1)), address(bancorArbitrage), AMOUNT, 0);
@@ -405,7 +410,12 @@ contract BancorArbitrageV2ArbsTest is Test {
         amounts[1] = AMOUNT;
         BancorArbitrage.Flashloan[] memory flashloans = getFlashloanDataForBalancer(tokens, amounts);
         // get routes
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(3, uint16(PlatformId.UNISWAP_V3), 0, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(
+            3,
+            uint16(PlatformId.UNISWAP_V3_FORK),
+            0,
+            AMOUNT
+        );
         // expect two flashloan events are emitted from the flashloan source (balancer vault)
         vm.expectEmit(true, true, true, true);
         emit FlashLoan(IFlashLoanRecipient(address(bancorArbitrage)), bnt, AMOUNT, 0);
@@ -437,7 +447,12 @@ contract BancorArbitrageV2ArbsTest is Test {
         );
 
         // get routes
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(3, uint16(PlatformId.UNISWAP_V3), 0, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(
+            3,
+            uint16(PlatformId.UNISWAP_V3_FORK),
+            0,
+            AMOUNT
+        );
         // expect all three flashloan events are emitted from the flashloan sources
         vm.expectEmit(true, true, true, true);
         // bancor v3 flashloan event
@@ -790,7 +805,12 @@ contract BancorArbitrageV2ArbsTest is Test {
             amountsBancorV3
         );
         // get routes
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(3, uint16(PlatformId.UNISWAP_V3), 0, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(
+            3,
+            uint16(PlatformId.UNISWAP_V3_FORK),
+            0,
+            AMOUNT
+        );
         (uint16[] memory exchangeIds, address[] memory tokenPath) = buildArbPath(routes);
 
         (
@@ -1341,7 +1361,7 @@ contract BancorArbitrageV2ArbsTest is Test {
             sourceAmount: 0,
             minTargetAmount: 1,
             deadline: DEADLINE,
-            customAddress: address(arbToken2),
+            customAddress: address(exchanges),
             customInt: 0,
             customData: ""
         });
@@ -1379,14 +1399,20 @@ contract BancorArbitrageV2ArbsTest is Test {
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](3);
 
-        uint256 customFee = 0;
-        // add custom fee bps for uni v3 - 100, 500 or 3000
-        if (platformId == uint16(PlatformId.UNISWAP_V3)) {
+        uint customFee = 0;
+        address customAddress = token2;
+        // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
+        if (platformId == uint16(PlatformId.UNISWAP_V3_FORK)) {
             uint16[3] memory fees = [100, 500, 3000];
             // get a random fee on each run
             uint256 feeIndex = bound(fee, 0, 2);
             // use 100, 500 or 3000
             customFee = fees[feeIndex];
+            // set customAddress to proper Uni V3 router
+            customAddress = address(exchanges);
+        }
+        if (platformId == uint16(PlatformId.UNISWAP_V2_FORK) || platformId == uint16(PlatformId.SUSHISWAP)) {
+            customAddress = address(exchanges);
         }
         bytes memory data = "";
         // add custom data for carbon
@@ -1417,7 +1443,7 @@ contract BancorArbitrageV2ArbsTest is Test {
             sourceAmount: arbAmount + hopGain,
             minTargetAmount: 1,
             deadline: DEADLINE,
-            customAddress: token2,
+            customAddress: customAddress,
             customInt: customFee,
             customData: data
         });
@@ -1451,9 +1477,11 @@ contract BancorArbitrageV2ArbsTest is Test {
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](routeLength);
 
-        uint256 customFee = 0;
-        // add custom fee bps for uni v3 - 100, 500 or 3000
-        if (platformId == uint16(PlatformId.UNISWAP_V3)) {
+        uint customFee = 0;
+        // custom address should be the exchange for all uni v2/v3 forks
+        address customAddress = address(exchanges);
+        // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
+        if (platformId == uint16(PlatformId.UNISWAP_V3_FORK)) {
             uint16[3] memory fees = [100, 500, 3000];
             // get a random fee on each run
             uint256 feeIndex = bound(fee, 0, 2);
@@ -1484,7 +1512,7 @@ contract BancorArbitrageV2ArbsTest is Test {
                 sourceAmount: currentAmount,
                 minTargetAmount: 1,
                 deadline: DEADLINE,
-                customAddress: targetToken,
+                customAddress: customAddress,
                 customInt: customFee,
                 customData: data
             });
@@ -1493,7 +1521,6 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         // last token should be BNT
         routes[routeLength - 1].targetToken = Token(address(bnt));
-        routes[routeLength - 1].customAddress = address(bnt);
         return routes;
     }
 
@@ -1863,9 +1890,6 @@ contract BancorArbitrageV2ArbsTest is Test {
         platformList = BancorArbitrage.Platforms({
             bancorNetworkV2: IBancorNetworkV2(_exchanges),
             bancorNetworkV3: IBancorNetwork(_exchanges),
-            uniV2Router: IUniswapV2Router02(_exchanges),
-            uniV3Router: ISwapRouter(_exchanges),
-            sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
             carbonPOL: ICarbonPOL(_exchanges)

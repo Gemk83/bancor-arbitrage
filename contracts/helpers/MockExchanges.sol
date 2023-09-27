@@ -217,7 +217,7 @@ contract MockExchanges {
     }
 
     /**
-     * Uniswap v2 + Sushiswap trades
+     * Uniswap v2 like trades
      */
     function swapExactTokensForTokens(
         uint256 amountIn,
@@ -258,7 +258,7 @@ contract MockExchanges {
     }
 
     /**
-     * Uniswap v3 trade
+     * Uniswap v3 like trades
      */
     function exactInputSingle(ISwapRouter.ExactInputSingleParams memory params) external returns (uint256 amountOut) {
         return
