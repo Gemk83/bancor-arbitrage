@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TestWETH is ERC20 {
-    event Deposit(address indexed dst, uint wad);
-    event Withdrawal(address indexed src, uint wad);
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
 
     constructor() ERC20("Wrapped Ether", "WETH") {}
 
@@ -18,7 +18,7 @@ contract TestWETH is ERC20 {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint amount) public {
+    function withdraw(uint256 amount) public {
         _burn(msg.sender, amount);
         payable(msg.sender).transfer(amount);
         emit Withdrawal(msg.sender, amount);

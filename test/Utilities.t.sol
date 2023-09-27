@@ -3,9 +3,6 @@ pragma solidity 0.8.19;
 
 import { Test } from "forge-std/Test.sol";
 
-import { IBancorNetwork } from "../contracts/exchanges/interfaces/IBancorNetwork.sol";
-import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
-
 contract Utilities is Test {
     bytes32 internal nextUser = keccak256(abi.encodePacked("user address"));
 
