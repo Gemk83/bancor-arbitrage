@@ -51,6 +51,15 @@ const TokenNamedAccounts = {
     }
 };
 
+const UniswapNamedAccounts = {
+    uniswapV3Router: { ...mainnet('0xE592427A0AEce92De3Edee1F18E0157C05861564') },
+    uniswapV2Router02: { ...mainnet('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D') }
+};
+
+const SushiSwapNamedAccounts = {
+    sushiSwapRouter: { ...mainnet('0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F') }
+};
+
 const BalancerNamedAccounts = {
     balancerVault: { ...mainnet('0xBA12222222228d8Ba445958a75a0704d566BF2C8') }
 };
@@ -76,6 +85,8 @@ export const NamedAccounts = {
 
     ...TokenNamedAccounts,
     ...TestNamedAccounts,
+    ...UniswapNamedAccounts,
+    ...SushiSwapNamedAccounts,
     ...BalancerNamedAccounts,
     ...BancorNamedAccounts
 };

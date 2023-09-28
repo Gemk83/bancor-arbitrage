@@ -78,6 +78,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     struct Platforms {
         IBancorNetworkV2 bancorNetworkV2;
         IBancorNetwork bancorNetworkV3;
+        IUniswapV2Router02 uniV2Router;
+        ISwapRouter uniV3Router;
+        IUniswapV2Router02 sushiswapRouter;
         ICarbonController carbonController;
         IBalancerVault balancerVault;
         ICarbonPOL carbonPOL;
@@ -109,6 +112,15 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // bancor v3 network contract
     IBancorNetwork internal immutable _bancorNetworkV3;
+
+    // uniswap v2 router contract
+    IUniswapV2Router02 internal immutable _uniswapV2Router;
+
+    // uniswap v3 router contract
+    ISwapRouter internal immutable _uniswapV3Router;
+
+    // sushiSwap router contract
+    IUniswapV2Router02 internal immutable _sushiSwapRouter;
 
     // Carbon controller contract
     ICarbonController internal immutable _carbonController;
@@ -159,24 +171,28 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      */
     constructor(
         IERC20 initBnt,
-        IERC20 initWeth,
         address initProtocolWallet,
         Platforms memory platforms
     )
         validAddress(address(initBnt))
-        validAddress(address(initWeth))
         validAddress(address(initProtocolWallet))
         validAddress(address(platforms.bancorNetworkV2))
         validAddress(address(platforms.bancorNetworkV3))
+        validAddress(address(platforms.uniV2Router))
+        validAddress(address(platforms.uniV3Router))
+        validAddress(address(platforms.sushiswapRouter))
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
         validAddress(address(platforms.carbonPOL))
     {
         _bnt = initBnt;
-        _weth = initWeth;
+        _weth = IERC20(platforms.uniV2Router.WETH());
         _protocolWallet = initProtocolWallet;
         _bancorNetworkV2 = platforms.bancorNetworkV2;
         _bancorNetworkV3 = platforms.bancorNetworkV3;
+        _uniswapV2Router = platforms.uniV2Router;
+        _uniswapV3Router = platforms.uniV3Router;
+        _sushiSwapRouter = platforms.sushiswapRouter;
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
@@ -543,8 +559,13 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         if (platformId == PLATFORM_ID_UNISWAP_V2_FORK || platformId == PLATFORM_ID_SUSHISWAP) {
-            // router is encoded in the custom address
-            IUniswapV2Router02 router = IUniswapV2Router02(customAddress);
+            IUniswapV2Router02 router;
+            // if router address is not provided, use default address
+            if (customAddress == address(0)) {
+                router = platformId == PLATFORM_ID_UNISWAP_V2_FORK ? _uniswapV2Router : _sushiSwapRouter;
+            } else {
+                router = IUniswapV2Router02(customAddress);
+            }
 
             // allow the router to withdraw the source tokens
             _setPlatformAllowance(sourceToken, address(router), sourceAmount);
@@ -571,8 +592,13 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         if (platformId == PLATFORM_ID_UNISWAP_V3_FORK) {
-            // router is encoded in the custom address
-            ISwapRouter router = ISwapRouter(customAddress);
+            ISwapRouter router;
+            // if router address is not provided, use default address
+            if (customAddress == address(0)) {
+                router = _uniswapV3Router;
+            } else {
+                router = ISwapRouter(customAddress);
+            }
 
             address tokenIn = sourceToken.isNative() ? address(_weth) : address(sourceToken);
             address tokenOut = targetToken.isNative() ? address(_weth) : address(targetToken);

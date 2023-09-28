@@ -7,10 +7,12 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
     const {
         deployer,
         bnt,
-        weth,
         protocolWallet,
         bancorNetworkV2,
         bancorNetworkV3,
+        uniswapV2Router02,
+        sushiSwapRouter,
+        uniswapV3Router,
         carbonController,
         balancerVault,
         carbonPOL
@@ -19,6 +21,9 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
     const platforms: BancorArbitrage.PlatformsStruct = {
         bancorNetworkV2,
         bancorNetworkV3,
+        uniV2Router: uniswapV2Router02,
+        uniV3Router: uniswapV3Router,
+        sushiswapRouter: sushiSwapRouter,
         carbonController,
         balancerVault,
         carbonPOL
@@ -29,7 +34,7 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
             {
                 name: InstanceName.BancorArbitrage,
                 from: deployer,
-                args: [bnt, weth, protocolWallet, platforms]
+                args: [bnt, protocolWallet, platforms]
             },
             true
         );
@@ -43,11 +48,13 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
                 from: deployer,
                 args: [
                     bnt,
-                    weth,
                     protocolWallet,
                     {
                         bancorNetworkV2: mockExchanges.address,
                         bancorNetworkV3,
+                        uniV2Router: mockExchanges.address,
+                        uniV3Router: mockExchanges.address,
+                        sushiswapRouter: mockExchanges.address,
                         carbonController: mockExchanges.address,
                         balancerVault: mockBalancerVault.address
                     }

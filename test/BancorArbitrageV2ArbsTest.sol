@@ -6,6 +6,9 @@ import { Test } from "forge-std/Test.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import { Token } from "../contracts/token/Token.sol";
 import { TokenLibrary } from "../contracts/token/TokenLibrary.sol";
 import { ZeroValue } from "../contracts/utility/Utils.sol";
@@ -141,7 +144,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         // init exchanges struct
         platformStruct = getPlatformStruct(address(exchanges), address(balancerVault));
         // Deploy arbitrage contract
-        bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
+        bancorArbitrage = new BancorArbitrage(bnt, protocolWallet, platformStruct);
 
         bytes memory selector = abi.encodeWithSelector(bancorArbitrage.initialize.selector);
 
@@ -837,6 +840,103 @@ contract BancorArbitrageV2ArbsTest is Test {
             rewardAmounts
         );
         vm.prank(user1);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test proper arbitrage executed parameters - without passing in customAddress for uni v2/v3 and sushiswap
+     */
+    function testArbitrageExecutedUniV2V3SushiswapBackwardsCompatibility() public {
+        IERC20[] memory tokensBalancer = new IERC20[](2);
+        uint256[] memory amountsBalancer = new uint256[](2);
+        IERC20[] memory tokensBancorV3 = new IERC20[](1);
+        uint256[] memory amountsBancorV3 = new uint256[](1);
+        tokensBalancer[0] = bnt;
+        amountsBalancer[0] = AMOUNT;
+        tokensBalancer[1] = arbToken1;
+        amountsBalancer[1] = AMOUNT;
+        tokensBancorV3[0] = arbToken2;
+        amountsBancorV3[0] = AMOUNT;
+
+        BancorArbitrage.Flashloan[] memory flashloans = getCombinedFlashloanData(
+            tokensBalancer,
+            amountsBalancer,
+            tokensBancorV3,
+            amountsBancorV3
+        );
+        // get routes
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomLength(
+            3,
+            uint16(PlatformId.UNISWAP_V3_FORK),
+            0,
+            AMOUNT
+        );
+        // set custom address to 0 for uniswap v3
+        routes[1].customAddress = address(0);
+        (uint16[] memory exchangeIds, address[] memory tokenPath) = buildArbPath(routes);
+
+        (
+            uint256[] memory rewardAmounts,
+            uint256[] memory protocolAmounts
+        ) = calculateExpectedUserRewardsAndProtocolAmountsMultipleFlashloans(3);
+        rewardAmounts[1] = 0;
+        rewardAmounts[2] = 0;
+        protocolAmounts[1] = 0;
+        protocolAmounts[2] = 0;
+        address[] memory sourceTokens = new address[](3);
+        uint256[] memory sourceAmounts = new uint256[](3);
+        sourceTokens[0] = address(bnt);
+        sourceAmounts[0] = AMOUNT;
+        sourceTokens[1] = address(arbToken1);
+        sourceAmounts[1] = AMOUNT;
+        sourceTokens[2] = address(arbToken2);
+        sourceAmounts[2] = AMOUNT;
+        vm.expectEmit(true, true, true, true);
+        emit ArbitrageExecuted(
+            user1,
+            exchangeIds,
+            tokenPath,
+            sourceTokens,
+            sourceAmounts,
+            protocolAmounts,
+            rewardAmounts
+        );
+        // test uni v3
+        vm.startPrank(user1);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+
+        // test uni v2
+        routes = getRoutesCustomLength(3, uint16(PlatformId.UNISWAP_V2_FORK), 0, AMOUNT);
+        // set custom address to 0 for uniswap v2
+        routes[1].customAddress = address(0);
+        (exchangeIds, tokenPath) = buildArbPath(routes);
+        vm.expectEmit(true, true, true, true);
+        emit ArbitrageExecuted(
+            user1,
+            exchangeIds,
+            tokenPath,
+            sourceTokens,
+            sourceAmounts,
+            protocolAmounts,
+            rewardAmounts
+        );
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+
+        // test sushiswap
+        routes = getRoutesCustomLength(3, uint16(PlatformId.SUSHISWAP), 0, AMOUNT);
+        // set custom address to 0 for sushiswap
+        routes[1].customAddress = address(0);
+        (exchangeIds, tokenPath) = buildArbPath(routes);
+        vm.expectEmit(true, true, true, true);
+        emit ArbitrageExecuted(
+            user1,
+            exchangeIds,
+            tokenPath,
+            sourceTokens,
+            sourceAmounts,
+            protocolAmounts,
+            rewardAmounts
+        );
         bancorArbitrage.flashloanAndArbV2(flashloans, routes);
     }
 
@@ -1887,6 +1987,9 @@ contract BancorArbitrageV2ArbsTest is Test {
         platformList = BancorArbitrage.Platforms({
             bancorNetworkV2: IBancorNetworkV2(_exchanges),
             bancorNetworkV3: IBancorNetwork(_exchanges),
+            uniV2Router: IUniswapV2Router02(_exchanges),
+            uniV3Router: ISwapRouter(_exchanges),
+            sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
             carbonPOL: ICarbonPOL(_exchanges)
