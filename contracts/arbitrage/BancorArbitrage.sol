@@ -17,7 +17,6 @@ import { castTokens as castToBalancerTokens } from "../exchanges/BalancerUtils.s
 
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
-import { IVersioned } from "../utility/interfaces/IVersioned.sol";
 import { Upgradeable } from "../utility/Upgradeable.sol";
 import { Utils, ZeroValue } from "../utility/Utils.sol";
 import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBancorNetwork.sol";
@@ -45,7 +44,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error MinTargetAmountNotReached();
     error InvalidSourceToken();
     error InvalidETHAmountSent();
-    error InsufficientBurn();
     error SourceAmountTooHigh();
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
@@ -91,8 +89,8 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     // platform ids
     uint16 public constant PLATFORM_ID_BANCOR_V2 = 1;
     uint16 public constant PLATFORM_ID_BANCOR_V3 = 2;
-    uint16 public constant PLATFORM_ID_UNISWAP_V2 = 3;
-    uint16 public constant PLATFORM_ID_UNISWAP_V3 = 4;
+    uint16 public constant PLATFORM_ID_UNISWAP_V2_FORK = 3;
+    uint16 public constant PLATFORM_ID_UNISWAP_V3_FORK = 4;
     uint16 public constant PLATFORM_ID_SUSHISWAP = 5;
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
@@ -235,7 +233,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 6;
+        return 7;
     }
 
     /**
@@ -560,8 +558,14 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
-        if (platformId == PLATFORM_ID_UNISWAP_V2 || platformId == PLATFORM_ID_SUSHISWAP) {
-            IUniswapV2Router02 router = platformId == PLATFORM_ID_UNISWAP_V2 ? _uniswapV2Router : _sushiSwapRouter;
+        if (platformId == PLATFORM_ID_UNISWAP_V2_FORK || platformId == PLATFORM_ID_SUSHISWAP) {
+            IUniswapV2Router02 router;
+            // if router address is not provided, use default address
+            if (customAddress == address(0)) {
+                router = platformId == PLATFORM_ID_UNISWAP_V2_FORK ? _uniswapV2Router : _sushiSwapRouter;
+            } else {
+                router = IUniswapV2Router02(customAddress);
+            }
 
             // allow the router to withdraw the source tokens
             _setPlatformAllowance(sourceToken, address(router), sourceAmount);
@@ -587,7 +591,15 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
-        if (platformId == PLATFORM_ID_UNISWAP_V3) {
+        if (platformId == PLATFORM_ID_UNISWAP_V3_FORK) {
+            ISwapRouter router;
+            // if router address is not provided, use default address
+            if (customAddress == address(0)) {
+                router = _uniswapV3Router;
+            } else {
+                router = ISwapRouter(customAddress);
+            }
+
             address tokenIn = sourceToken.isNative() ? address(_weth) : address(sourceToken);
             address tokenOut = targetToken.isNative() ? address(_weth) : address(targetToken);
 
@@ -596,7 +608,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             }
 
             // allow the router to withdraw the source tokens
-            _setPlatformAllowance(Token(tokenIn), address(_uniswapV3Router), sourceAmount);
+            _setPlatformAllowance(Token(tokenIn), address(router), sourceAmount);
 
             // build the params
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
@@ -611,7 +623,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             });
 
             // perform the trade
-            _uniswapV3Router.exactInputSingle(params);
+            router.exactInputSingle(params);
 
             if (tokenOut == address(_weth)) {
                 IWETH(address(_weth)).withdraw(_weth.balanceOf(address(this)));

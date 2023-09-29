@@ -45,7 +45,10 @@ export enum ExchangeId {
     BancorV3 = 2,
     UniswapV2 = 3,
     UniswapV3 = 4,
-    Sushiswap = 5
+    Sushiswap = 5,
+    Carbon = 6,
+    Balancer = 7,
+    CarbonPOL = 8
 }
 
 export const EXP2_INPUT_TOO_HIGH = new Decimal(16).div(new Decimal(2).ln());
