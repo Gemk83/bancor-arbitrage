@@ -162,7 +162,7 @@ packages:
   /@anders-t/ethers-ledger@1.0.4:
     resolution: {integrity: sha512-EVuIE5qe1rSbO4A/uHSHENtqA+OTA73aWNzWxiqo/kpUlXIpb6pWps31Pf4Zeh3XL5uW7iXWmkKjDYfJgQXAbw==}
     dependencies:
-      '@ledgerhq/hw-app-eth': 6.34.6
+      '@ledgerhq/hw-app-eth': 6.34.7
       '@ledgerhq/hw-transport-node-hid': 6.27.21
       ethers: 5.7.2
     transitivePeerDependencies:
@@ -264,8 +264,8 @@ packages:
       eslint-visitor-keys: 3.4.3
     dev: true
 
-  /@eslint-community/regexpp@4.9.0:
-    resolution: {integrity: sha512-zJmuCWj2VLBt4c25CfBIbMZLGLyhkvs7LznyVX5HfpzeocThgIj5XQK4L+g3U36mMcx8bPMhGyPpwCATamC4jQ==}
+  /@eslint-community/regexpp@4.9.1:
+    resolution: {integrity: sha512-Y27x+MBLjXa+0JWDhykM3+JE+il3kHKAEqabfEWq3SDhZjLYb6/BHL/JKFnH3fe207JaXkyDo685Oc2Glt6ifA==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
     dev: true
 
@@ -628,8 +628,8 @@ packages:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  /@ledgerhq/cryptoassets@9.13.0:
-    resolution: {integrity: sha512-MzGJyc48OGU/FLYGYwEJyfOgbJzlR8XJ9Oo6XpNpNUM1/E5NDqvD72V0D+0uWIJYN3e2NtyqHXShLZDu7P95YA==}
+  /@ledgerhq/cryptoassets@11.0.0:
+    resolution: {integrity: sha512-r21sWwHbPqj58dU3qIYApdKHTiet2rlCJV/hGYSYQf8AiYJx/s9IURDaeQBkq1pd4Oo9e59svuD1UYip2Nw4jA==}
     dependencies:
       invariant: 2.2.4
     dev: true
@@ -643,13 +643,13 @@ packages:
       semver: 7.5.4
     dev: true
 
-  /@ledgerhq/domain-service@1.1.11:
-    resolution: {integrity: sha512-ILhjsW6qf7vweJoevobH3hjLHvWUNwcSedoWcCq+QpmpGIjMDQ1QjI6akEu+9ZzdSOcc0T9YflzY3smLbAOWrw==}
+  /@ledgerhq/domain-service@1.1.12:
+    resolution: {integrity: sha512-k41XiV+hDPxw9JWqybfses+Z1HAiuflv5x7AbtS+hBE6h6BYRlqEbPbDdOfMvLFeAxOFltHTwLimFsepFdvuYw==}
     dependencies:
-      '@ledgerhq/cryptoassets': 9.13.0
+      '@ledgerhq/cryptoassets': 11.0.0
       '@ledgerhq/errors': 6.14.0
       '@ledgerhq/logs': 6.10.1
-      '@ledgerhq/types-live': 6.40.0
+      '@ledgerhq/types-live': 6.41.0
       axios: 1.5.1
       eip55: 2.1.1
       react: 17.0.2
@@ -662,12 +662,12 @@ packages:
     resolution: {integrity: sha512-ZWJw2Ti6Dq1Ott/+qYqJdDWeZm16qI3VNG5rFlb0TQ3UcAyLIQZbnnzzdcVVwVeZiEp66WIpINd/pBdqsHVyOA==}
     dev: true
 
-  /@ledgerhq/evm-tools@1.0.7:
-    resolution: {integrity: sha512-uRz6O4SEjGrnvvVNd9ejANoazwqyA2q33obsirus/pmin0xNoOF6Jj7xQ2lChuIGtJ8G0LJKzFJ7iwAHnITCBg==}
+  /@ledgerhq/evm-tools@1.0.8:
+    resolution: {integrity: sha512-gObo+42aFYYjj631Z6oxB+1lKz8XMDad20K2HpSly99bYN1D/0vDMl+LqX7LpeXh/dJsrUy0xE+xa5uwPPjP+A==}
     dependencies:
-      '@ledgerhq/cryptoassets': 9.13.0
-      '@ledgerhq/live-env': 0.5.0
-      '@ledgerhq/live-network': 1.1.6
+      '@ledgerhq/cryptoassets': 11.0.0
+      '@ledgerhq/live-env': 0.6.0
+      '@ledgerhq/live-network': 1.1.7
       crypto-js: 4.1.1
       ethers: 5.7.2
     transitivePeerDependencies:
@@ -676,19 +676,19 @@ packages:
       - utf-8-validate
     dev: true
 
-  /@ledgerhq/hw-app-eth@6.34.6:
-    resolution: {integrity: sha512-aAILevSvmwsGmEvZWMsIHWpa2f0nF/4xjG8s4MPmWhqk4anoqTUXAtPWR+fftNUgTXVG0e0jAe5y+oaO6S7L0A==}
+  /@ledgerhq/hw-app-eth@6.34.7:
+    resolution: {integrity: sha512-a3DdgNRNa/2u97CJxvjZybtOdSp2GxRFF80H0jUweeXsqgGW5WKM+17Ay3NysjXzaKolnvAgTonSNdTS6h0pzw==}
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/rlp': 5.7.0
-      '@ledgerhq/cryptoassets': 9.13.0
-      '@ledgerhq/domain-service': 1.1.11
+      '@ledgerhq/cryptoassets': 11.0.0
+      '@ledgerhq/domain-service': 1.1.12
       '@ledgerhq/errors': 6.14.0
-      '@ledgerhq/evm-tools': 1.0.7
+      '@ledgerhq/evm-tools': 1.0.8
       '@ledgerhq/hw-transport': 6.28.8
       '@ledgerhq/hw-transport-mocker': 6.27.19
       '@ledgerhq/logs': 6.10.1
-      '@ledgerhq/types-live': 6.40.0
+      '@ledgerhq/types-live': 6.41.0
       axios: 1.5.1
       bignumber.js: 9.1.2
     transitivePeerDependencies:
@@ -735,18 +735,18 @@ packages:
       events: 3.3.0
     dev: true
 
-  /@ledgerhq/live-env@0.5.0:
-    resolution: {integrity: sha512-f9nGHNcYV0XMyxZTTBsNrnh8KKQoXx6hbixBADDXUDWf8uPiZlh5O41uCQ3ufRoyptCjeiv0nQ6TFxcCK929eA==}
+  /@ledgerhq/live-env@0.6.0:
+    resolution: {integrity: sha512-wWlatg4OT0p2jCmUERBtI6dduSe4BIZiSUuh1uSjQpbnTTPoMVHNjn4U7A4Ns1+Zz5TkmDwXS8yE523cRjjVrg==}
     dependencies:
       rxjs: 6.6.7
       utility-types: 3.10.0
     dev: true
 
-  /@ledgerhq/live-network@1.1.6:
-    resolution: {integrity: sha512-T9x+GUEk9wmGwHfzHj0uY7u78tpDankwyTFhXnoTI2i5TCACLNQQjQsMtlhs6kT1ZUKVcZdZSN5Pn1SQJA4nbw==}
+  /@ledgerhq/live-network@1.1.7:
+    resolution: {integrity: sha512-OneMFcGRc5DbHWSNG41kfY/81Lm78IxJScIufGMW6beb0Sp6SmlHqkfjwrPLtp1GeHrJ2SqaXAvWROV/AexhUg==}
     dependencies:
       '@ledgerhq/errors': 6.14.0
-      '@ledgerhq/live-env': 0.5.0
+      '@ledgerhq/live-env': 0.6.0
       '@ledgerhq/live-promise': 0.0.1
       '@ledgerhq/logs': 6.10.1
       '@types/node': 20.8.0
@@ -767,8 +767,8 @@ packages:
     resolution: {integrity: sha512-z+ILK8Q3y+nfUl43ctCPuR4Y2bIxk/ooCQFwZxhtci1EhAtMDzMAx2W25qx8G1PPL9UUOdnUax19+F0OjXoj4w==}
     dev: true
 
-  /@ledgerhq/types-live@6.40.0:
-    resolution: {integrity: sha512-n5iSDX7s10hV3xgqlb2t8DuPrhuOrxqWTvM5HTpipcWp0sUpWzI28H74rQV7CeJ11DDn5Z6bOQj9pwr4mtQQrw==}
+  /@ledgerhq/types-live@6.41.0:
+    resolution: {integrity: sha512-qiTpQkaQD4YQxFS6tpBVlMkkWLrCc/PIz9foSBcS0SiJMn3apYm2JchC4tdiOuhUwL0IPRMqS0yNOGmMm6Vs8g==}
     dependencies:
       bignumber.js: 9.1.2
       rxjs: 6.6.7
@@ -1382,7 +1382,7 @@ packages:
       typescript:
         optional: true
     dependencies:
-      '@eslint-community/regexpp': 4.9.0
+      '@eslint-community/regexpp': 4.9.1
       '@typescript-eslint/parser': 5.62.0(eslint@8.50.0)(typescript@5.2.2)
       '@typescript-eslint/scope-manager': 5.62.0
       '@typescript-eslint/type-utils': 5.62.0(eslint@8.50.0)(typescript@5.2.2)
@@ -2567,7 +2567,7 @@ packages:
       eslint: '>=8'
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.50.0)
-      '@eslint-community/regexpp': 4.9.0
+      '@eslint-community/regexpp': 4.9.1
       eslint: 8.50.0
     dev: true
 
@@ -2686,7 +2686,7 @@ packages:
     hasBin: true
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.50.0)
-      '@eslint-community/regexpp': 4.9.0
+      '@eslint-community/regexpp': 4.9.1
       '@eslint/eslintrc': 2.1.2
       '@eslint/js': 8.50.0
       '@humanwhocodes/config-array': 0.11.11
