@@ -19,6 +19,8 @@ import { MockExchanges } from "../contracts/helpers/MockExchanges.sol";
 import { MockBalancerVault } from "../contracts/helpers/MockBalancerVault.sol";
 import { TestBNT } from "../contracts/helpers/TestBNT.sol";
 import { TestWETH } from "../contracts/helpers/TestWETH.sol";
+import { TestReentrancy } from "../contracts/helpers/TestReentrancy.sol";
+import { TestReentrantToken } from "../contracts/helpers/TestReentrantToken.sol";
 import { IBancorNetworkV2 } from "../contracts/exchanges/interfaces/IBancorNetworkV2.sol";
 import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/interfaces/IBancorNetwork.sol";
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
@@ -1431,6 +1433,88 @@ contract BancorArbitrageV2ArbsTest is Test {
         routes[1].minTargetAmount = 2 ** 128;
         vm.expectRevert(BancorArbitrage.MinTargetAmountTooHigh.selector);
         bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    function testShouldRevertArbWithUserFundsIfReentrancyIsAttempted(uint256) public {
+        vm.startPrank(user1);
+        TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
+        // transfer tokens to test reentrancy
+        arbToken1.transfer(address(testReentrancy), AMOUNT);
+        // approve tokens
+        testReentrancy.approveTokens(Token(address(arbToken1)), AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.BANCOR_V2),
+            address(arbToken1),
+            address(arbToken2),
+            address(TokenLibrary.NATIVE_TOKEN),
+            AMOUNT,
+            500
+        );
+        // reverts in "unsafeTransfer" in fundAndArb - which uses OZ's Address "sendValue" function
+        vm.expectRevert("Address: unable to send value, recipient may have reverted");
+        testReentrancy.tryReenterFundAndArb{ value: AMOUNT }(routes, Token(address(TokenLibrary.NATIVE_TOKEN)), AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testShouldRevertArbWithUserFundsIfReentrancyIsAttemptedViaMaliciousToken(uint256) public {
+        vm.startPrank(user1);
+        TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
+        // deploy malicious token
+        TestReentrantToken reentrantToken = new TestReentrantToken(
+            "TKN1",
+            "TKN1",
+            1_000_000_000 ether,
+            bancorArbitrage
+        );
+        // set pool collection
+        exchanges.setCollectionByPool(Token(address(reentrantToken)));
+        // transfer tokens to test reentrancy
+        reentrantToken.standardTransfer(address(testReentrancy), AMOUNT);
+        // approve tokens
+        testReentrancy.approveTokens(Token(address(reentrantToken)), AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.BANCOR_V2),
+            address(arbToken1),
+            address(arbToken2),
+            address(reentrantToken),
+            AMOUNT,
+            500
+        );
+        // reverts in the "safeTransferFrom" call in fundAndArb
+        vm.expectRevert("ReentrancyGuard: reentrant call");
+        testReentrancy.tryReenterFundAndArb(routes, Token(address(reentrantToken)), AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testShouldRevertFlashloanArbIfReentrancyIsAttemptedViaMaliciousToken(uint256) public {
+        vm.startPrank(user1);
+        TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
+        // deploy malicious token
+        TestReentrantToken reentrantToken = new TestReentrantToken(
+            "TKN1",
+            "TKN1",
+            1_000_000_000 ether,
+            bancorArbitrage
+        );
+        // set pool collection
+        exchanges.setCollectionByPool(Token(address(reentrantToken)));
+        // transfer tokens to exchange to test reentrancy
+        reentrantToken.standardTransfer(address(exchanges), AMOUNT * 2);
+        // flashloan bnt
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.BANCOR_V2),
+            address(reentrantToken),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        // reverts in the "safeTransfer" call when the reentrantTokens get sent from the exchange to bancorArbitrage
+        // token transfer function is overriden to attempt re-entry in flashloanAndArbV2
+        vm.expectRevert("ReentrancyGuard: reentrant call");
+        testReentrancy.tryReenterFlashloanAndArbV2(flashloans, routes);
+        vm.stopPrank();
     }
 
     /**
