@@ -832,7 +832,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         uint256 allowance = token.toIERC20().allowance(address(this), platform);
         if (allowance < inputAmount) {
             // increase allowance to the max amount if allowance < inputAmount
-            token.safeIncreaseAllowance(platform, type(uint256).max - allowance);
+            token.forceApprove(platform, type(uint256).max);
         }
     }
 
