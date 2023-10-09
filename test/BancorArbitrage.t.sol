@@ -11,7 +11,7 @@ import { ISwapRouter } from "@uniswap/v3-periphery/contracts/interfaces/ISwapRou
 
 import { Token } from "../contracts/token/Token.sol";
 import { TokenLibrary } from "../contracts/token/TokenLibrary.sol";
-import { ZeroValue } from "../contracts/utility/Utils.sol";
+import { ZeroValue, InvalidAddress } from "../contracts/utility/Utils.sol";
 import { TransparentUpgradeableProxyImmutable } from "../contracts/utility/TransparentUpgradeableProxyImmutable.sol";
 import { Utilities } from "./Utilities.t.sol";
 import { BancorArbitrage } from "../contracts/arbitrage/BancorArbitrage.sol";
@@ -199,6 +199,101 @@ contract BancorArbitrageV2ArbsTest is Test {
         exchanges.setCollectionByPool(TokenLibrary.NATIVE_TOKEN);
 
         vm.stopPrank();
+    }
+
+    /**
+     * @dev test should be able to initialize new implementation
+     */
+    function testShouldBeAbleToInitializeImpl() public {
+        BancorArbitrage __bancorArbitrage = new BancorArbitrage(bnt, protocolWallet, platformStruct);
+        __bancorArbitrage.initialize();
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid BNT contract
+     */
+    function testShouldRevertWhenInitializingWithInvalidBNTContract() public {
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(IERC20(address(0)), protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid burner wallet
+     */
+    function testShouldRevertWhenInitializingWithInvalidBurnerWallet() public {
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, address(0), platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid Bancor V2 contract
+     */
+    function testShouldRevertWhenInitializingWithInvalidBancorV2Contract() public {
+        platformStruct.bancorNetworkV2 = IBancorNetworkV2(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid Bancor V3 contract
+     */
+    function testShouldRevertWhenInitializingWithInvalidBancorV3Contract() public {
+        platformStruct.bancorNetworkV3 = IBancorNetwork(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid Uni V2 router
+     */
+    function testShouldRevertWhenInitializingWithInvalidUniV2Router() public {
+        platformStruct.uniV2Router = IUniswapV2Router02(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid Uni V3 router
+     */
+    function testShouldRevertWhenInitializingWithInvalidUniV3Router() public {
+        platformStruct.uniV3Router = ISwapRouter(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid Sushiswap router
+     */
+    function testShouldRevertWhenInitializingWithInvalidSushiswapRouter() public {
+        platformStruct.sushiswapRouter = IUniswapV2Router02(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid CarbonController contract
+     */
+    function testShouldRevertWhenInitializingWithInvalidCarbonControllerContract() public {
+        platformStruct.carbonController = ICarbonController(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test revert when deploying BancorArbitrage with an invalid CarbonPOL contract
+     */
+    function testShouldRevertWhenInitializingWithInvalidCarbonPOLContract() public {
+        platformStruct.carbonPOL = ICarbonPOL(address(0));
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    }
+
+    /**
+     * @dev test that bancorArbitrage should be initialized
+     */
+    function testShouldBeInitialized() public {
+        uint256 version = bancorArbitrage.version();
+        assertEq(version, 7);
     }
 
     /// --- Reward distribution and protocol transfer tests --- ///
@@ -687,6 +782,21 @@ contract BancorArbitrageV2ArbsTest is Test {
         routes[2].targetToken = Token(address(nonWhitelistedToken));
         routes[2].customAddress = address(nonWhitelistedToken);
         vm.expectRevert(BancorArbitrage.InvalidSourceToken.selector);
+        // make arb with the non-whitelisted token
+        executeArbitrageNoApproval(flashloans, routes, true);
+    }
+
+    /**
+     * @dev test reverts if the source token isn't tradeable on bancor network v3
+     * @dev test user-funded arb
+     */
+    function testShouldRevertIfUserFundedArbLastArbTokenIsntEqualToInitialArbToken() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(nonWhitelistedToken, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutes();
+        // set last token to be different from bnt
+        routes[2].targetToken = Token(address(arbToken2));
+        routes[2].customAddress = address(arbToken2);
+        vm.expectRevert(BancorArbitrage.InvalidInitialAndFinalTokens.selector);
         // make arb with the non-whitelisted token
         executeArbitrageNoApproval(flashloans, routes, true);
     }
@@ -1435,7 +1545,82 @@ contract BancorArbitrageV2ArbsTest is Test {
         bancorArbitrage.flashloanAndArbV2(flashloans, routes);
     }
 
-    function testShouldRevertArbWithUserFundsIfReentrancyIsAttempted(uint256) public {
+    /**
+     * @dev test that arb attempt on carbon pol with invalid trade data should revert
+     */
+    function testShouldRevertArbOnCarbonPOLWithLargerThanUint128SourceAmount() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        // transfer enough eth in order to hit the source amount check
+        vm.deal(address(bancorArbitrage), 2 ** 128);
+        routes[1].sourceAmount = 2 ** 128;
+        vm.expectRevert(BancorArbitrage.SourceAmountTooHigh.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on carbon pol with invalid trade data should revert
+     */
+    function testShouldRevertArbOnCarbonPOLWithNonETHAsSourceToken() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(arbToken1),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.SourceTokenIsNotETH.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on carbon pol with invalid trade data should revert
+     */
+    function testShouldRevertArbOnCarbonPOLWithETHAsTargetToken() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.TargetTokenIsETH.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on carbon if min target amount is not reached
+     */
+    function testShouldRevertArbOnCarbonPOLIfMinTargetAmountIsNotReached() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        routes[1].minTargetAmount = 2 ** 128;
+        vm.expectRevert(BancorArbitrage.MinTargetAmountNotReached.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt with user funds should revert if reentrancy is attempted
+     */
+    function testShouldRevertArbWithUserFundsIfReentrancyIsAttempted() public {
         vm.startPrank(user1);
         TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
         // transfer tokens to test reentrancy
@@ -1456,7 +1641,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         vm.stopPrank();
     }
 
-    function testShouldRevertArbWithUserFundsIfReentrancyIsAttemptedViaMaliciousToken(uint256) public {
+    /**
+     * @dev test that arb attempt with user funds should revert if reentrancy is attempted via a malicious token
+     */
+    function testShouldRevertArbWithUserFundsIfReentrancyIsAttemptedViaMaliciousToken() public {
         vm.startPrank(user1);
         TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
         // deploy malicious token
@@ -1486,7 +1674,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         vm.stopPrank();
     }
 
-    function testShouldRevertFlashloanArbIfReentrancyIsAttemptedViaMaliciousToken(uint256) public {
+    /**
+     * @dev test that flashloan arb attempt should revert if reentrancy is attempted via a malicious token
+     */
+    function testShouldRevertFlashloanArbIfReentrancyIsAttemptedViaMaliciousToken() public {
         vm.startPrank(user1);
         TestReentrancy testReentrancy = new TestReentrancy(bancorArbitrage);
         // deploy malicious token
