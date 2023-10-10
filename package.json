@@ -10,7 +10,7 @@
     "test": "forge test",
     "test:deploy": "pnpm deploy:prepare:fork && TEST_FORK=1 ./deployments/run-fork.sh HARDHAT_NETWORK=tenderly mocha --require hardhat/register --extension ts --recursive --exit --timeout 600000 --bail --no-exit 'deploy/tests/**/*.ts'",
     "coverage": "forge coverage",
-    "coverage:genhtml": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
+    "coverage:report": "forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
     "gas-report": "forge test --gas-report",
     "codesize": "forge build --sizes",
     "export:storage": "pnpm cleanbuild && hardhat run deployments/storage-layout.ts",
