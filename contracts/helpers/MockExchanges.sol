@@ -228,14 +228,14 @@ contract MockExchanges {
     /**
      * ICurveRegistry function
      */
-    function find_pool_for_coins(address, address) external view returns(address) {
+    function find_pool_for_coins(address, address) external view returns (address) {
         return address(this);
     }
 
     /**
      * ICurveRegistry function
      */
-    function get_coin_indices(address, address _from, address _to) external view returns(int128, int128, bool) {
+    function get_coin_indices(address, address _from, address _to) external view returns (int128, int128, bool) {
         return (_curveTokenToIndex[Token(_from)], _curveTokenToIndex[Token(_to)], false);
     }
 

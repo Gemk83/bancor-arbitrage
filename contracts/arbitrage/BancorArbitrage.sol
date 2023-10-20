@@ -730,7 +730,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
         if (platformId == PLATFORM_ID_CURVE) {
             address poolAddress = _curveRegistry.find_pool_for_coins(address(sourceToken), address(targetToken));
-            (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(poolAddress, address(sourceToken), address(targetToken));
+            (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(
+                poolAddress,
+                address(sourceToken),
+                address(targetToken)
+            );
 
             // get the expected return
             uint256 targetAmount = ICurvePool(poolAddress).get_dy(i, j, sourceAmount);
