@@ -850,6 +850,8 @@ contract BancorArbitrageV2ArbsTest is Test {
                 if (!isValidTestConfiguration(platformId, routes)) {
                     continue;
                 }
+                // set curve tokens
+                setCurveTokens(routes);
                 vm.startPrank(user1);
                 // approve token if user-funded arb
                 if (userFunded) {
@@ -1157,16 +1159,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         if (!isValidTestConfiguration(platformId, routes)) {
             return;
         }
-        // TODO: is that the way?
-        for (uint256 i = 0; i < routes.length; i++) {
-            if (PlatformId(routes[i].platformId) == PlatformId.CURVE) {
-                exchanges.setCurveTradeTokens(routes[i].sourceToken, routes[i].targetToken);
-                break;
-            }
-        }
+        // set curve tokens
+        setCurveTokens(routes);
         // trade
         executeArbitrage(flashloans, routes, userFunded);
-        exchanges.setCurveTradeTokens(Token(address(0)), Token(address(0)));
     }
 
     /**
@@ -2300,5 +2296,14 @@ contract BancorArbitrageV2ArbsTest is Test {
             }
         }
         return true;
+    }
+
+    function setCurveTokens(BancorArbitrage.TradeRoute[] memory routes) private {
+        for (uint256 i = 0; i < routes.length; i++) {
+            if (PlatformId(routes[i].platformId) == PlatformId.CURVE) {
+                exchanges.setCurveToken(int128(int256(i * 2 + 0)), routes[i].sourceToken);
+                exchanges.setCurveToken(int128(int256(i * 2 + 1)), routes[i].targetToken);
+            }
+        }
     }
 }

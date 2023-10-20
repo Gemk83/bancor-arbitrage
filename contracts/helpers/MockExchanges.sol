@@ -35,8 +35,9 @@ contract MockExchanges {
     // mapping for tokens tradeable on v3
     mapping(Token => address) public collectionByPool;
 
-    Token private _curvePoolSourceToken;
-    Token private _curvePoolTargetToken;
+    // mapping for tokens tradeable on curve
+    mapping(int128 => Token) private _curveIndexToToken;
+    mapping(Token => int128) private _curveTokenToIndex;
 
     error InsufficientFlashLoanReturn();
     error NotWhitelisted();
@@ -219,9 +220,9 @@ contract MockExchanges {
         return mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0).toUint128();
     }
 
-    function setCurveTradeTokens(Token _from, Token _to) external {
-        _curvePoolSourceToken = _from;
-        _curvePoolTargetToken = _to;
+    function setCurveToken(int128 index, Token token) external {
+        _curveIndexToToken[index] = token;
+        _curveTokenToIndex[token] = index;
     }
 
     /**
@@ -234,8 +235,8 @@ contract MockExchanges {
     /**
      * ICurveRegistry function
      */
-    function get_coin_indices(address, address, address) external pure returns(int128, int128, bool) {
-        return (0, 0, false);
+    function get_coin_indices(address, address _from, address _to) external view returns(int128, int128, bool) {
+        return (_curveTokenToIndex[Token(_from)], _curveTokenToIndex[Token(_to)], false);
     }
 
     /**
@@ -252,8 +253,8 @@ contract MockExchanges {
     /**
      * ICurvePool function
      */
-    function exchange(int128, int128, uint256 dx, uint256 min_dy) external payable returns (uint256) {
-        return mockSwap(_curvePoolSourceToken, _curvePoolTargetToken, dx, msg.sender, block.timestamp, min_dy);
+    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256) {
+        return mockSwap(_curveIndexToToken[i], _curveIndexToToken[j], dx, msg.sender, block.timestamp, min_dy);
     }
 
     /**
