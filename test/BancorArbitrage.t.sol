@@ -26,6 +26,7 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/inte
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { ICarbonPOL } from "../contracts/exchanges/interfaces/ICarbonPOL.sol";
+import { ICurveRegistry } from "../contracts/exchanges/interfaces/ICurve.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
@@ -60,7 +61,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     uint256 private constant AMOUNT = 1000 ether;
     uint256 private constant MIN_LIQUIDITY_FOR_TRADING = 1000 ether;
     uint256 private constant FIRST_EXCHANGE_ID = 1;
-    uint256 private constant LAST_EXCHANGE_ID = 8;
+    uint256 private constant LAST_EXCHANGE_ID = 9;
 
     enum PlatformId {
         INVALID,
@@ -71,7 +72,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         SUSHISWAP,
         CARBON,
         BALANCER,
-        CARBON_POL
+        CARBON_POL,
+        CURVE
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
@@ -1155,8 +1157,16 @@ contract BancorArbitrageV2ArbsTest is Test {
         if (!isValidTestConfiguration(platformId, routes)) {
             return;
         }
+        // TODO: is that the way?
+        for (uint256 i = 0; i < routes.length; i++) {
+            if (PlatformId(routes[i].platformId) == PlatformId.CURVE) {
+                exchanges.setCurveTradeTokens(routes[i].sourceToken, routes[i].targetToken);
+                break;
+            }
+        }
         // trade
         executeArbitrage(flashloans, routes, userFunded);
+        exchanges.setCurveTradeTokens(Token(0), Token(0));
     }
 
     /**
@@ -2267,7 +2277,8 @@ contract BancorArbitrageV2ArbsTest is Test {
             sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
-            carbonPOL: ICarbonPOL(_exchanges)
+            carbonPOL: ICarbonPOL(_exchanges),
+            curveRegistry: ICurveRegistry(_exchanges)
         });
     }
 

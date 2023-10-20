@@ -35,6 +35,9 @@ contract MockExchanges {
     // mapping for tokens tradeable on v3
     mapping(Token => address) public collectionByPool;
 
+    Token private _curvePoolSourceToken;
+    Token private _curvePoolTargetToken;
+
     error InsufficientFlashLoanReturn();
     error NotWhitelisted();
     error ZeroValue();
@@ -214,6 +217,43 @@ contract MockExchanges {
      */
     function trade(Token token, uint128 amount) external payable returns (uint128) {
         return mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0).toUint128();
+    }
+
+    function setCurveTradeTokens(Token _from, Token _to) external {
+        _curvePoolSourceToken = _from;
+        _curvePoolTargetToken = _to;
+    }
+
+    /**
+     * ICurveRegistry function
+     */
+    function find_pool_for_coins(address, address) external view returns(address) {
+        return address(this);
+    }
+
+    /**
+     * ICurveRegistry function
+     */
+    function get_coin_indices(address, address, address) external pure returns(int128, int128, bool) {
+        return (0, 0, false);
+    }
+
+    /**
+     * ICurvePool function
+     */
+    function get_dy(int128, int128, uint256 dx) external view returns (uint256) {
+        if (_profit) {
+            return dx + _outputAmount;
+        } else {
+            return dx - _outputAmount;
+        }
+    }
+
+    /**
+     * ICurvePool function
+     */
+    function exchange(int128, int128, uint256 dx, uint256 min_dy) external payable returns (uint256) {
+        return mockSwap(_curvePoolSourceToken, _curvePoolTargetToken, dx, msg.sender, block.timestamp, min_dy);
     }
 
     /**

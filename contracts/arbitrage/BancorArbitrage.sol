@@ -23,6 +23,7 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBa
 import { IBancorNetworkV2 } from "../exchanges/interfaces/IBancorNetworkV2.sol";
 import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
+import { ICurveRegistry, ICurvePool } from "../exchanges/interfaces/ICurve.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
 import { MathEx } from "../utility/MathEx.sol";
 
@@ -84,6 +85,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         ICarbonController carbonController;
         IBalancerVault balancerVault;
         ICarbonPOL carbonPOL;
+        ICurveRegistry curveRegistry;
     }
 
     // platform ids
@@ -95,6 +97,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
+    uint16 public constant PLATFORM_ID_CURVE = 9;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -130,6 +133,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // Carbon POL contract
     ICarbonPOL internal immutable _carbonPOL;
+
+    // Curve Registry contract
+    ICurveRegistry internal immutable _curveRegistry;
 
     // Protocol wallet address
     address internal immutable _protocolWallet;
@@ -184,6 +190,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
         validAddress(address(platforms.carbonPOL))
+        validAddress(address(platforms.curveRegistry))
     {
         _bnt = initBnt;
         _weth = IERC20(platforms.uniV2Router.WETH());
@@ -196,6 +203,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
+        _curveRegistry = platforms.curveRegistry;
     }
 
     /**
@@ -654,12 +662,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 uint128(minTargetAmount)
             );
 
-            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            if (remainingSourceTokens > 0) {
-                // transfer any remaining source tokens to the protocol wallet
-                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
-            }
+            _transferRemaining(sourceToken);
 
             return;
         }
@@ -720,17 +723,47 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
 
-            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            if (remainingSourceTokens > 0) {
-                // transfer any remaining source tokens to the protocol wallet
-                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            _transferRemaining(sourceToken);
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_CURVE) {
+            address poolAddress = _curveRegistry.find_pool_for_coins(address(sourceToken), address(targetToken));
+            (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(poolAddress, address(sourceToken), address(targetToken));
+
+            // get the expected return
+            uint256 targetAmount = ICurvePool(poolAddress).get_dy(i, j, sourceAmount);
+
+            // verify the expected return
+            if (targetAmount < minTargetAmount) {
+                revert MinTargetAmountNotReached();
             }
+
+            if (sourceToken.isNative()) {
+                // perform the trade
+                ICurvePool(poolAddress).exchange{ value: sourceAmount }(i, j, sourceAmount, minTargetAmount);
+            } else {
+                // allow the curve pool to withdraw the source tokens and perform the trade
+                _setPlatformAllowance(sourceToken, poolAddress, sourceAmount);
+                ICurvePool(poolAddress).exchange(i, j, sourceAmount, minTargetAmount);
+            }
+
+            _transferRemaining(sourceToken);
 
             return;
         }
 
         revert InvalidTradePlatformId();
+    }
+
+    function _transferRemaining(Token sourceToken) private {
+        uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
+        if (remainingSourceTokens > 0) {
+            // transfer any remaining source tokens to the protocol wallet
+            // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
+            sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+        }
     }
 
     /**
