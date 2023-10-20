@@ -228,6 +228,7 @@ contract MockExchanges {
     /**
      * ICurveRegistry function
      */
+    //solhint-disable-next-line func-name-mixedcase
     function find_pool_for_coins(address, address) external view returns (address) {
         return address(this);
     }
@@ -235,6 +236,7 @@ contract MockExchanges {
     /**
      * ICurveRegistry function
      */
+    //solhint-disable-next-line func-name-mixedcase
     function get_coin_indices(address, address _from, address _to) external view returns (int128, int128, bool) {
         return (_curveTokenToIndex[Token(_from)], _curveTokenToIndex[Token(_to)], false);
     }
@@ -242,6 +244,7 @@ contract MockExchanges {
     /**
      * ICurvePool function
      */
+    //solhint-disable-next-line func-name-mixedcase
     function get_dy(int128, int128, uint256 dx) external view returns (uint256) {
         if (_profit) {
             return dx + _outputAmount;
