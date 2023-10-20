@@ -1166,7 +1166,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         // trade
         executeArbitrage(flashloans, routes, userFunded);
-        exchanges.setCurveTradeTokens(Token(0), Token(0));
+        exchanges.setCurveTradeTokens(Token(address(0)), Token(address(0)));
     }
 
     /**
