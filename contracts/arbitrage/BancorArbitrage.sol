@@ -728,7 +728,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         if (platformId == PLATFORM_ID_CURVE) {
-            address poolAddress = _curveRegistry.find_pool_for_coins(address(sourceToken), address(targetToken), customInt);
+            address poolAddress = _curveRegistry.find_pool_for_coins(
+                address(sourceToken),
+                address(targetToken),
+                customInt
+            );
             (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(
                 poolAddress,
                 address(sourceToken),
@@ -785,7 +789,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         for (uint256 i = 0; i < tokenLength; i = uncheckedInc(i)) {
             Token sourceToken = Token(sourceTokens[i]);
             uint256 balance = sourceToken.balanceOf(address(this));
-            uint256 rewardAmount = balance * _rewards.percentagePPM / PPM_RESOLUTION;
+            uint256 rewardAmount = (balance * _rewards.percentagePPM) / PPM_RESOLUTION;
             uint256 protocolAmount;
             // safe because _rewards.percentagePPM <= PPM_RESOLUTION
             unchecked {
@@ -892,7 +896,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 flashloan.sourceTokens.length == 0 ||
                 flashloan.sourceTokens.length != flashloan.sourceAmounts.length ||
                 (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && flashloan.sourceTokens.length > 1)
-             ) {
+            ) {
                 revert InvalidFlashloanFormat();
             }
             // check source amounts are not zero in value
