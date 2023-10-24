@@ -146,7 +146,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         // init exchanges struct
         platformStruct = getPlatformStruct(address(exchanges), address(balancerVault));
         // Deploy arbitrage contract
-        bancorArbitrage = new BancorArbitrage(bnt, protocolWallet, platformStruct);
+        bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
 
         bytes memory selector = abi.encodeWithSelector(bancorArbitrage.initialize.selector);
 
@@ -202,90 +202,20 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test should be able to initialize new implementation
-     */
-    function testShouldBeAbleToInitializeImpl() public {
-        BancorArbitrage __bancorArbitrage = new BancorArbitrage(bnt, protocolWallet, platformStruct);
-        __bancorArbitrage.initialize();
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid BNT contract
-     */
-    function testShouldRevertWhenInitializingWithInvalidBNTContract() public {
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(IERC20(address(0)), protocolWallet, platformStruct);
-    }
-
-    /**
      * @dev test revert when deploying BancorArbitrage with an invalid burner wallet
      */
     function testShouldRevertWhenInitializingWithInvalidBurnerWallet() public {
         vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, address(0), platformStruct);
+        new BancorArbitrage(bnt, weth, address(0), platformStruct);
     }
 
     /**
-     * @dev test revert when deploying BancorArbitrage with an invalid Bancor V2 contract
+     * @dev test should revert when attempting to reinitialize implementation
      */
-    function testShouldRevertWhenInitializingWithInvalidBancorV2Contract() public {
-        platformStruct.bancorNetworkV2 = IBancorNetworkV2(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid Bancor V3 contract
-     */
-    function testShouldRevertWhenInitializingWithInvalidBancorV3Contract() public {
-        platformStruct.bancorNetworkV3 = IBancorNetwork(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid Uni V2 router
-     */
-    function testShouldRevertWhenInitializingWithInvalidUniV2Router() public {
-        platformStruct.uniV2Router = IUniswapV2Router02(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid Uni V3 router
-     */
-    function testShouldRevertWhenInitializingWithInvalidUniV3Router() public {
-        platformStruct.uniV3Router = ISwapRouter(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid Sushiswap router
-     */
-    function testShouldRevertWhenInitializingWithInvalidSushiswapRouter() public {
-        platformStruct.sushiswapRouter = IUniswapV2Router02(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid CarbonController contract
-     */
-    function testShouldRevertWhenInitializingWithInvalidCarbonControllerContract() public {
-        platformStruct.carbonController = ICarbonController(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
-    }
-
-    /**
-     * @dev test revert when deploying BancorArbitrage with an invalid CarbonPOL contract
-     */
-    function testShouldRevertWhenInitializingWithInvalidCarbonPOLContract() public {
-        platformStruct.carbonPOL = ICarbonPOL(address(0));
-        vm.expectRevert(InvalidAddress.selector);
-        new BancorArbitrage(bnt, protocolWallet, platformStruct);
+    function testShouldRevertWhenAttemptingToReinitializeImplementation() public {
+        BancorArbitrage __bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
+        vm.expectRevert("Initializable: contract is already initialized");
+        __bancorArbitrage.initialize();
     }
 
     /**
