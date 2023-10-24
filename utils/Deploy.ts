@@ -38,9 +38,13 @@ const tenderlyNetwork = tenderly.network();
 
 interface EnvOptions {
     TEST_FORK?: boolean;
+    TENDERLY_NETWORK_ID?: number;
 }
 
-const { TEST_FORK: isTestFork }: EnvOptions = process.env as any as EnvOptions;
+const { 
+    TEST_FORK: isTestFork,
+    TENDERLY_NETWORK_ID: networkId
+}: EnvOptions = process.env as any as EnvOptions;
 
 enum LegacyInstanceNameV2 {
     BNT = 'BNT',
@@ -122,10 +126,11 @@ export const DeployedContracts = {
 };
 
 export const isTenderlyFork = () => getNetworkName() === DeploymentNetwork.Tenderly;
-export const isMainnetFork = () => isTenderlyFork();
-export const isMainnet = () => getNetworkName() === DeploymentNetwork.Mainnet || isMainnetFork();
+export const isMainnet = () => getNetworkName() === DeploymentNetwork.Mainnet || isTenderlyFork();
+export const isBase = () => getNetworkName() === DeploymentNetwork.Base || isTenderlyFork();
+export const isArbitrum = () => getNetworkName() === DeploymentNetwork.Arbitrum || isTenderlyFork();
 export const isSepolia = () => getNetworkName() === DeploymentNetwork.Sepolia;
-export const isLive = () => (isMainnet() && !isMainnetFork()) || isSepolia();
+export const isLive = () => (isMainnet() || isSepolia() || isBase() || isArbitrum()) && !isTenderlyFork();
 
 const TEST_MINIMUM_BALANCE = toWei(10);
 const TEST_FUNDING = toWei(10);
@@ -141,7 +146,7 @@ export const getNamedSigners = async (): Promise<Record<string, SignerWithAddres
 };
 
 export const fundAccount = async (account: string | SignerWithAddress) => {
-    if (!isMainnetFork()) {
+    if (!isTenderlyFork()) {
         return;
     }
 
@@ -607,7 +612,8 @@ export const deploymentTagExists = (tag: string) => {
 const deploymentFileNameToTag = (filename: string) => Number(path.basename(filename).split('-')[0]).toString();
 
 export const getPreviousDeploymentTag = (tag: string) => {
-    const files = fs.readdirSync(config.paths.deploy[0]).sort();
+    const dir = path.join(config.paths.deploy[0], getNetworkNameById(networkId));
+    const files = fs.readdirSync(dir).sort();
 
     const index = files.map((f) => deploymentFileNameToTag(f)).lastIndexOf(tag);
     if (index === -1) {
@@ -618,7 +624,8 @@ export const getPreviousDeploymentTag = (tag: string) => {
 };
 
 export const getLatestDeploymentTag = () => {
-    const files = fs.readdirSync(config.paths.deploy[0]).sort();
+    const dir = path.join(config.paths.deploy[0], getNetworkNameById(networkId));
+    const files = fs.readdirSync(dir).sort();
     return Number(files[files.length - 1].split('-')[0]).toString();
 };
 
@@ -652,6 +659,19 @@ export const runPendingDeployments = async () => {
         deletePreviousDeployments: false,
         writeDeploymentsToFiles: true
     });
+};
+
+export const getNetworkNameById = (networkId: number | undefined): string => {
+    if(!networkId) {
+        return "mainnet";
+    }
+    const networkName = Object.keys(config.networks).find(network => 
+        Number(config.networks[network]?.chainId) === Number(networkId)
+    );
+    if(!networkName) {
+        throw new Error(`Cannot find network with id: ${networkId}`);
+    }
+    return networkName;
 };
 
 export const getInstanceNameByAddress = (address: string): InstanceName => {

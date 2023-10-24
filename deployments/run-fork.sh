@@ -12,6 +12,8 @@ else
     project=${TENDERLY_PROJECT}
 fi
 
+network_id=${TENDERLY_NETWORK_ID:-"1"}
+
 TENDERLY_FORK_API="https://api.tenderly.co/api/v1/account/${username}/project/${project}/fork"
 
 cleanup() {
@@ -28,7 +30,7 @@ trap cleanup TERM EXIT
 
 fork_id=$(curl -sX POST "${TENDERLY_FORK_API}" \
     -H "Content-Type: application/json" -H "X-Access-Key: ${TENDERLY_ACCESS_KEY}" \
-    -d '{"network_id": "1"}' | jq -r '.simulation_fork.id')
+    -d '{"network_id": "'${network_id}'"}' | jq -r '.simulation_fork.id')
 
 echo "Created a fork ${fork_id} at ${username}/${project}..."
 echo

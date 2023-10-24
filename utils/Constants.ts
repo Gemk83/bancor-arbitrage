@@ -8,6 +8,8 @@ const {
 
 export enum DeploymentNetwork {
     Mainnet = 'mainnet',
+    Base = 'base',
+    Arbitrum = 'arbitrum',
     Sepolia = 'sepolia',
     Hardhat = 'hardhat',
     Tenderly = 'tenderly'

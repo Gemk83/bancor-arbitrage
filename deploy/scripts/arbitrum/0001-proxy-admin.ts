@@ -1,4 +1,4 @@
-import { deploy, InstanceName, setDeploymentMetadata } from '../../utils/Deploy';
+import { deploy, InstanceName, setDeploymentMetadata } from '../../../utils/Deploy';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 

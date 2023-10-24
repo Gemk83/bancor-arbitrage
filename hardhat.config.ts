@@ -14,6 +14,8 @@ import { NamedAccounts } from './data/named-accounts';
 
 interface EnvOptions {
     ETHEREUM_PROVIDER_URL?: string;
+    BASE_PROVIDER_URL?: string;
+    ARBITRUM_PROVIDER_URL?: string;
     ETHEREUM_SEPOLIA_PROVIDER_URL?: string;
     ETHERSCAN_API_KEY?: string;
     GAS_PRICE?: number | 'auto';
@@ -21,17 +23,23 @@ interface EnvOptions {
     TENDERLY_PROJECT?: string;
     TENDERLY_TEST_PROJECT?: string;
     TENDERLY_USERNAME?: string;
+    TENDERLY_NETWORK_ID?: string;
+    TENDERLY_FORK_NETWORK_NAME?: string;
 }
 
 const {
     ETHEREUM_PROVIDER_URL = '',
+    BASE_PROVIDER_URL = '',
+    ARBITRUM_PROVIDER_URL = '',
     ETHEREUM_SEPOLIA_PROVIDER_URL = '',
     ETHERSCAN_API_KEY,
     GAS_PRICE: gasPrice = 'auto',
     TENDERLY_FORK_ID = '',
     TENDERLY_PROJECT = '',
     TENDERLY_TEST_PROJECT = '',
-    TENDERLY_USERNAME = ''
+    TENDERLY_USERNAME = '',
+    TENDERLY_NETWORK_ID = '1',
+    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet,
 }: EnvOptions = process.env as any as EnvOptions;
 
 const config: HardhatUserConfig = {
@@ -50,20 +58,39 @@ const config: HardhatUserConfig = {
             url: ETHEREUM_PROVIDER_URL,
             gasPrice,
             saveDeployments: true,
-            live: true
+            live: true,
+            deploy: [`deploy/scripts/${DeploymentNetwork.Mainnet}`]
+        },
+        [DeploymentNetwork.Base]: {
+            chainId: 8453,
+            url: BASE_PROVIDER_URL,
+            gasPrice,
+            saveDeployments: true,
+            live: true,
+            deploy: [`deploy/scripts/${DeploymentNetwork.Base}`]
+        },
+        [DeploymentNetwork.Arbitrum]: {
+            chainId: 42161,
+            url: ARBITRUM_PROVIDER_URL,
+            gasPrice,
+            saveDeployments: true,
+            live: true,
+            deploy: [`deploy/scripts/${DeploymentNetwork.Arbitrum}`]
         },
         [DeploymentNetwork.Sepolia]: {
             chainId: 11155111,
             url: ETHEREUM_SEPOLIA_PROVIDER_URL,
             saveDeployments: true,
-            live: true
+            live: true,
+            deploy: [`deploy/scripts/${DeploymentNetwork.Sepolia}`]
         },
         [DeploymentNetwork.Tenderly]: {
-            chainId: 1,
+            chainId: parseInt(TENDERLY_NETWORK_ID),
             url: `https://rpc.tenderly.co/fork/${TENDERLY_FORK_ID}`,
             autoImpersonate: true,
             saveDeployments: true,
-            live: true
+            live: true,
+            deploy: [`deploy/scripts/${TENDERLY_FORK_NETWORK_NAME}`]
         }
     },
     solidity: {
@@ -86,7 +113,7 @@ const config: HardhatUserConfig = {
         deploy: ['deploy/scripts']
     },
     tenderly: {
-        forkNetwork: '1',
+        forkNetwork: TENDERLY_NETWORK_ID,
         project: TENDERLY_PROJECT || TENDERLY_TEST_PROJECT,
         username: TENDERLY_USERNAME
     },
@@ -105,6 +132,9 @@ const config: HardhatUserConfig = {
         ],
         deployments: {
             [DeploymentNetwork.Mainnet]: [`deployments/${DeploymentNetwork.Mainnet}`],
+            [DeploymentNetwork.Base]: [`deployments/${DeploymentNetwork.Base}`],
+            [DeploymentNetwork.Arbitrum]: [`deployments/${DeploymentNetwork.Arbitrum}`],
+            [DeploymentNetwork.Sepolia]: [`deployments/${DeploymentNetwork.Sepolia}`],
             [DeploymentNetwork.Tenderly]: [`deployments/${DeploymentNetwork.Tenderly}`]
         }
     },

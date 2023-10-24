@@ -20,6 +20,7 @@ interface EnvOptions {
     TENDERLY_PROJECT: string;
     TENDERLY_USERNAME: string;
     TENDERLY_FORK_ID: string;
+    TENDERLY_FORK_NETWORK_NAME: string;
 }
 
 const {
@@ -28,7 +29,8 @@ const {
     FORK_RESEARCH: isResearch,
     TENDERLY_PROJECT,
     TENDERLY_USERNAME,
-    TENDERLY_FORK_ID: forkId
+    TENDERLY_FORK_ID: forkId,
+    TENDERLY_FORK_NETWORK_NAME = 'mainnet'
 }: EnvOptions = process.env as any as EnvOptions;
 
 interface FundingRequest {
@@ -41,6 +43,10 @@ const fundAccount = async (account: string, fundingRequests: FundingRequest[]) =
     Logger.log(`Funding ${account}...`);
 
     for (const fundingRequest of fundingRequests) {
+        // if no whale skip funding request (some tokens are missing on different networks)
+        if (!fundingRequest.whale) {
+            continue;
+        }
         if (fundingRequest.token === NATIVE_TOKEN_ADDRESS) {
             await fundingRequest.whale.sendTransaction({
                 value: fundingRequest.amount,
@@ -66,7 +72,7 @@ const fundAccounts = async () => {
     const fundingRequests = [
         {
             token: NATIVE_TOKEN_ADDRESS,
-            amount: toWei(10_000),
+            amount: toWei(1000),
             whale: ethWhale
         },
         {
@@ -140,7 +146,9 @@ const main = async () => {
 
     await archiveArtifacts();
 
-    const description = `${FORK_NAME} Fork`;
+    const networkName = TENDERLY_FORK_NETWORK_NAME.charAt(0).toUpperCase() + TENDERLY_FORK_NETWORK_NAME.slice(1);
+
+    const description = `${networkName} ${FORK_NAME ? FORK_NAME : ""} Fork`;
 
     Logger.log('********************************************************************************');
     Logger.log();

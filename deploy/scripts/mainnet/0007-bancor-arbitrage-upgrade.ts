@@ -1,7 +1,7 @@
-import { DeployedContracts, InstanceName, isMainnet, setDeploymentMetadata, upgradeProxy } from '../../utils/Deploy';
+import { DeployedContracts, InstanceName, isMainnet, setDeploymentMetadata, upgradeProxy } from '../../../utils/Deploy';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BancorArbitrage } from '../../typechain-types';
+import { BancorArbitrage } from '../../../typechain-types';
 
 const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
     const {
@@ -14,7 +14,8 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         bancorNetworkV2,
         bancorNetworkV3,
         carbonController,
-        balancerVault
+        balancerVault,
+        carbonPOL
     } = await getNamedAccounts();
 
     const platforms: BancorArbitrage.PlatformsStruct = {
@@ -24,7 +25,8 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         uniV3Router: uniswapV3Router,
         sushiswapRouter: sushiSwapRouter,
         carbonController,
-        balancerVault
+        balancerVault,
+        carbonPOL
     };
 
     if (isMainnet()) {

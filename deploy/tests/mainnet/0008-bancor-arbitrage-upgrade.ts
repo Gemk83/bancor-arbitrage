@@ -1,7 +1,7 @@
-import { shouldHaveGap } from '../../utils/Proxy';
-import { BancorArbitrage, ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
-import { toPPM, toWei } from '../../utils/Types';
+import { shouldHaveGap } from '../../../utils/Proxy';
+import { BancorArbitrage, ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
+import { toPPM, toWei } from '../../../utils/Types';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -18,7 +18,7 @@ describeDeployment(__filename, () => {
 
     it('should upgrade correctly', async () => {
         expect(await proxyAdmin.getProxyAdmin(bancorArbitrage.address)).to.equal(proxyAdmin.address);
-        expect(await bancorArbitrage.version()).to.equal(5);
+        expect(await bancorArbitrage.version()).to.equal(7);
         const implementationAddress = await proxyAdmin.getProxyImplementation(bancorArbitrage.address);
         const bancorArbitrageImplementation: BancorArbitrage = await ethers.getContractAt(
             'BancorArbitrage',
@@ -30,6 +30,8 @@ describeDeployment(__filename, () => {
         expect(arbRewards.maxAmount.toString()).to.equal(toWei(1000).toString());
 
         // test implementation has been initialized
-        await expect(bancorArbitrageImplementation.initialize()).to.be.rejectedWith('execution reverted');
+        // hardcoding gas limit to avoid gas estimation attempts (which get rejected instead of reverted)
+        const tx = bancorArbitrageImplementation.initialize({ gasLimit: 6000000 });
+        await expect(await tx).to.be.reverted;
     });
 });
