@@ -25,7 +25,6 @@ import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonC
 import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
 import { ICurveRegistry, ICurvePool } from "../exchanges/interfaces/ICurve.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
-import { MathEx } from "../utility/MathEx.sol";
 
 /**
  * @dev BancorArbitrage contract
@@ -786,7 +785,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         for (uint256 i = 0; i < tokenLength; i = uncheckedInc(i)) {
             Token sourceToken = Token(sourceTokens[i]);
             uint256 balance = sourceToken.balanceOf(address(this));
-            uint256 rewardAmount = MathEx.mulDivF(balance, _rewards.percentagePPM, PPM_RESOLUTION);
+            uint256 rewardAmount = balance * _rewards.percentagePPM / PPM_RESOLUTION;
             uint256 protocolAmount;
             // safe because _rewards.percentagePPM <= PPM_RESOLUTION
             unchecked {
@@ -889,13 +888,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
         for (uint256 i = 0; i < flashloans.length; i = uncheckedInc(i)) {
             Flashloan memory flashloan = flashloans[i];
-            if (flashloan.sourceTokens.length == 0) {
-                revert InvalidFlashloanFormat();
-            }
-            if (flashloan.sourceTokens.length != flashloan.sourceAmounts.length) {
-                revert InvalidFlashloanFormat();
-            }
-            if (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && flashloan.sourceTokens.length > 1) {
+            if (
+                flashloan.sourceTokens.length == 0 ||
+                flashloan.sourceTokens.length != flashloan.sourceAmounts.length ||
+                (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && flashloan.sourceTokens.length > 1)
+             ) {
                 revert InvalidFlashloanFormat();
             }
             // check source amounts are not zero in value
