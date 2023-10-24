@@ -9,9 +9,11 @@ interface ICurveRegistry {
      * @notice Find an available pool for exchanging two coins
      * @param _from Address of coin to be sent
      * @param _to Address of coin to be received
+     * @param i Index value. When multiple pools are available
+               this value is used to return the n'th address.
      * @return Pool address
      */
-    function find_pool_for_coins(address _from, address _to) external view returns(address);
+    function find_pool_for_coins(address _from, address _to, uint256 i) external view returns(address);
 
     /**
      * @notice Convert coin addresses to indices for use with pool methods

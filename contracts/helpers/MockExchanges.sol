@@ -229,7 +229,7 @@ contract MockExchanges {
      * ICurveRegistry function
      */
     //solhint-disable-next-line func-name-mixedcase
-    function find_pool_for_coins(address, address) external view returns (address) {
+    function find_pool_for_coins(address, address, uint256) external view returns (address) {
         return address(this);
     }
 
