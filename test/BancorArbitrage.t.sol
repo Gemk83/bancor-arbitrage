@@ -850,7 +850,6 @@ contract BancorArbitrageV2ArbsTest is Test {
                 if (!isValidTestConfiguration(platformId, routes)) {
                     continue;
                 }
-                // set curve tokens
                 setCurveTokens(routes);
                 vm.startPrank(user1);
                 // approve token if user-funded arb
@@ -1159,7 +1158,6 @@ contract BancorArbitrageV2ArbsTest is Test {
         if (!isValidTestConfiguration(platformId, routes)) {
             return;
         }
-        // set curve tokens
         setCurveTokens(routes);
         // trade
         executeArbitrage(flashloans, routes, userFunded);
