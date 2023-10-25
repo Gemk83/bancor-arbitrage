@@ -661,7 +661,12 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 uint128(minTargetAmount)
             );
 
-            _transferRemaining(sourceToken);
+            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
+            if (remainingSourceTokens > 0) {
+                // transfer any remaining source tokens to the protocol wallet
+                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
+                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            }
 
             return;
         }
@@ -722,7 +727,12 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
 
-            _transferRemaining(sourceToken);
+            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
+            if (remainingSourceTokens > 0) {
+                // transfer any remaining source tokens to the protocol wallet
+                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
+                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            }
 
             return;
         }
@@ -739,14 +749,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 address(targetToken)
             );
 
-            // get the expected return
-            uint256 targetAmount = ICurvePool(poolAddress).get_dy(i, j, sourceAmount);
-
-            // verify the expected return
-            if (targetAmount < minTargetAmount) {
-                revert MinTargetAmountNotReached();
-            }
-
             if (sourceToken.isNative()) {
                 // perform the trade
                 ICurvePool(poolAddress).exchange{ value: sourceAmount }(i, j, sourceAmount, minTargetAmount);
@@ -756,21 +758,10 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 ICurvePool(poolAddress).exchange(i, j, sourceAmount, minTargetAmount);
             }
 
-            _transferRemaining(sourceToken);
-
             return;
         }
 
         revert InvalidTradePlatformId();
-    }
-
-    function _transferRemaining(Token sourceToken) private {
-        uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-        if (remainingSourceTokens > 0) {
-            // transfer any remaining source tokens to the protocol wallet
-            // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-            sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
-        }
     }
 
     /**

@@ -244,18 +244,6 @@ contract MockExchanges {
     /**
      * ICurvePool function
      */
-    //solhint-disable-next-line func-name-mixedcase
-    function get_dy(int128, int128, uint256 dx) external view returns (uint256) {
-        if (_profit) {
-            return dx + _outputAmount;
-        } else {
-            return dx - _outputAmount;
-        }
-    }
-
-    /**
-     * ICurvePool function
-     */
     //solhint-disable-next-line var-name-mixedcase
     function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256) {
         return mockSwap(_curveIndexToToken[i], _curveIndexToToken[j], dx, msg.sender, block.timestamp, min_dy);

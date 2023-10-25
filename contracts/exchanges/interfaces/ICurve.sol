@@ -29,16 +29,6 @@ interface ICurveRegistry {
  */
 interface ICurvePool {
     /**
-     * @notice Returns the expected trade output (tokens received) given a trade input (tokens sent)
-     * @dev Index values can be found via the `coins` public getter method
-     * @param i Index value for the coin to send
-     * @param j Index valie of the coin to recieve
-     * @param dx Amount of `i` being exchanged
-     * @return Expected amount of `j` received
-     */
-    function get_dy(int128 i, int128 j, uint256 dx) external view returns (uint256);
-
-    /**
      * @notice Perform an exchange between two coins
      * @dev Index values can be found via the `coins` public getter method
      * @param i Index value for the coin to send
