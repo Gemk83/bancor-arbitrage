@@ -11,6 +11,7 @@ import AdmZip from 'adm-zip';
 import { BigNumber } from 'ethers';
 import { getNamedAccounts } from 'hardhat';
 import 'hardhat-deploy';
+import { capitalize } from 'lodash';
 import path from 'path';
 
 interface EnvOptions {
@@ -145,7 +146,7 @@ const main = async () => {
 
     await archiveArtifacts();
 
-    const networkName = TENDERLY_FORK_NETWORK_NAME.charAt(0).toUpperCase() + TENDERLY_FORK_NETWORK_NAME.slice(1);
+    const networkName = capitalize(TENDERLY_FORK_NETWORK_NAME);
 
     const description = `${networkName} ${FORK_NAME ? FORK_NAME : ""} Fork`;
 

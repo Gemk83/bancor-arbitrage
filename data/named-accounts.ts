@@ -27,10 +27,6 @@ const base = (address: string) => {
             [DeploymentNetwork.Base]: address,
             [DeploymentNetwork.Tenderly]: address
         }
-    } else {
-        return {
-            [DeploymentNetwork.Base]: address
-        }
     }
 }
 
