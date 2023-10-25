@@ -1,7 +1,7 @@
 import Contracts from '../components/Contracts';
 import { getNamedSigners, isTenderlyFork, runPendingDeployments } from '../utils/Deploy';
 import Logger from '../utils/Logger';
-import { NATIVE_TOKEN_ADDRESS } from '../utils/Constants';
+import { NATIVE_TOKEN_ADDRESS, ZERO_ADDRESS } from '../utils/Constants';
 import { toWei } from '../utils/Types';
 import '@nomiclabs/hardhat-ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -43,8 +43,8 @@ const fundAccount = async (account: string, fundingRequests: FundingRequest[]) =
     Logger.log(`Funding ${account}...`);
 
     for (const fundingRequest of fundingRequests) {
-        // if no whale skip funding request (some tokens are missing on different networks)
-        if (!fundingRequest.whale) {
+        // for tokens which are missing on a network skip funding request (BNT is not on Base, Arbitrum, etc.)
+        if (fundingRequest.token === ZERO_ADDRESS) {
             continue;
         }
         if (fundingRequest.token === NATIVE_TOKEN_ADDRESS) {
@@ -65,9 +65,8 @@ const fundAccounts = async () => {
     Logger.log('Funding test accounts...');
     Logger.log();
 
-    const { dai, link, usdc, wbtc } = await getNamedAccounts();
+    const { dai, link, usdc, wbtc, bnt } = await getNamedAccounts();
     const { ethWhale, bntWhale, daiWhale, linkWhale, usdcWhale, wbtcWhale } = await getNamedSigners();
-    const bntAddress = '0x1F573D6Fb3F13d689FF844B4cE37794d79a7FF1C'
 
     const fundingRequests = [
         {
@@ -76,7 +75,7 @@ const fundAccounts = async () => {
             whale: ethWhale
         },
         {
-            token: bntAddress,
+            token: bnt,
             amount: toWei(10_000),
             whale: bntWhale
         },

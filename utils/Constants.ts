@@ -15,6 +15,13 @@ export enum DeploymentNetwork {
     Tenderly = 'tenderly'
 }
 
+export enum NetworkId {
+    Mainnet = '1',
+    Base = '8453',
+    Arbitrum = '42161',
+    Sepolia = '11155111'
+}
+
 export const MAX_UINT256 = MaxUint256;
 export const ZERO_BYTES = '0x';
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';

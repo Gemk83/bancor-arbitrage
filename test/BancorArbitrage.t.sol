@@ -202,7 +202,15 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test revert when deploying BancorArbitrage with an invalid burner wallet
+     * @dev test should revert when deploying BancorArbitrage with an invalid weth address
+     */
+    function testShouldRevertWhenInitializingWithInvalidWethAddress() public {
+        vm.expectRevert(InvalidAddress.selector);
+        new BancorArbitrage(bnt, weth, address(0), platformStruct);
+    }
+
+    /**
+     * @dev test should revert when deploying BancorArbitrage with an invalid burner wallet
      */
     function testShouldRevertWhenInitializingWithInvalidBurnerWallet() public {
         vm.expectRevert(InvalidAddress.selector);

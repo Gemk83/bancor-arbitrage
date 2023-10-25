@@ -174,7 +174,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         IERC20 initWeth,
         address initProtocolWallet,
         Platforms memory platforms
-    ) validAddress(address(initProtocolWallet)) {
+    ) validAddress(address(initWeth)) validAddress(address(initProtocolWallet)) {
         _bnt = initBnt;
         _weth = initWeth;
         _protocolWallet = initProtocolWallet;
@@ -186,6 +186,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
+        
         initialize();
     }
 

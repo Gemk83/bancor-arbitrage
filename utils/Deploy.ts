@@ -1,7 +1,7 @@
 import { ArtifactData } from '../components/ContractBuilder';
 import { BancorArbitrage, IVersioned, MockBalancerVault, MockExchanges, ProxyAdmin } from '../components/Contracts';
 import Logger from './Logger';
-import { DeploymentNetwork, ZERO_BYTES, PROXY_CONTRACT, INITIALIZE, POST_UPGRADE } from './Constants';
+import { DeploymentNetwork, ZERO_BYTES, PROXY_CONTRACT, INITIALIZE, POST_UPGRADE, NetworkId } from './Constants';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Contract, ContractInterface, utils } from 'ethers';
 import fs from 'fs';
@@ -41,10 +41,7 @@ interface EnvOptions {
     TENDERLY_NETWORK_ID?: number;
 }
 
-const { 
-    TEST_FORK: isTestFork,
-    TENDERLY_NETWORK_ID: networkId
-}: EnvOptions = process.env as any as EnvOptions;
+const { TEST_FORK: isTestFork, TENDERLY_NETWORK_ID: networkId }: EnvOptions = process.env as any as EnvOptions;
 
 enum LegacyInstanceNameV2 {
     BNT = 'BNT',
@@ -512,7 +509,7 @@ interface InitializeImplementationOptions {
 export const initializeImplementation = async (options: InitializeImplementationOptions) => {
     const { name, address, args, from } = options;
 
-    const instanceName: InstanceName = getInstanceNameByAddress(address); 
+    const instanceName: InstanceName = getInstanceNameByAddress(address);
 
     Logger.log(`  initializing implementation of ${name}`);
 
@@ -662,13 +659,15 @@ export const runPendingDeployments = async () => {
 };
 
 export const getNetworkNameById = (networkId: number | undefined): string => {
-    if(!networkId) {
-        return "mainnet";
+    if (!networkId) {
+        return DeploymentNetwork.Mainnet;
     }
-    const networkName = Object.keys(config.networks).find(network => 
-        Number(config.networks[network]?.chainId) === Number(networkId)
-    );
-    if(!networkName) {
+    const networkIdString = networkId.toString();
+    const networkName = Object.keys(DeploymentNetwork).find((key) => {
+        const correspondingNetworkId = NetworkId[key as keyof typeof NetworkId];
+        return correspondingNetworkId === networkIdString;
+    });
+    if (!networkName) {
         throw new Error(`Cannot find network with id: ${networkId}`);
     }
     return networkName;

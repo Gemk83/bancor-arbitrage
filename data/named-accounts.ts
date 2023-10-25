@@ -1,4 +1,4 @@
-import { DeploymentNetwork } from '../utils/Constants';
+import { DeploymentNetwork, NetworkId } from '../utils/Constants';
 
 interface EnvOptions {
     TENDERLY_NETWORK_ID?: string;
@@ -9,7 +9,7 @@ const {
 }: EnvOptions = process.env as any as EnvOptions;
 
 const mainnet = (address: string) => {
-    if(TENDERLY_NETWORK_ID == '1') {
+    if (TENDERLY_NETWORK_ID === NetworkId.Mainnet) {
         return {
             [DeploymentNetwork.Mainnet]: address,
             [DeploymentNetwork.Tenderly]: address
@@ -22,7 +22,7 @@ const mainnet = (address: string) => {
 }
 
 const base = (address: string) => {
-    if(TENDERLY_NETWORK_ID == '8453') {
+    if (TENDERLY_NETWORK_ID === NetworkId.Base) {
         return {
             [DeploymentNetwork.Base]: address,
             [DeploymentNetwork.Tenderly]: address
@@ -35,7 +35,7 @@ const base = (address: string) => {
 }
 
 const arbitrum = (address: string) => {
-    if(TENDERLY_NETWORK_ID == '42161') {
+    if (TENDERLY_NETWORK_ID === NetworkId.Arbitrum) {
         return {
             [DeploymentNetwork.Arbitrum]: address,
             [DeploymentNetwork.Tenderly]: address
@@ -48,7 +48,7 @@ const arbitrum = (address: string) => {
 }
 
 const sepolia = (address: string) => {
-    if(TENDERLY_NETWORK_ID == '11155111') {
+    if (TENDERLY_NETWORK_ID === NetworkId.Sepolia) {
         return {
             [DeploymentNetwork.Sepolia]: address,
             [DeploymentNetwork.Tenderly]: address
@@ -97,7 +97,7 @@ const TokenNamedAccounts = {
     },
     link: {
         ...mainnet('0x514910771AF9Ca656af840dff83E8264EcF986CA'),
-        //...base('0x88Fb150BDc53A65fe94Dea0c9BA0a6dAf8C6e196'),
+        ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0xf97f4df75117a78c1A5a0DBb814Af92458539FB4')
     },
     weth: {
@@ -112,6 +112,7 @@ const TokenNamedAccounts = {
     },
     wbtc: {
         ...mainnet('0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'),
+        ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f')
     },
     bnt: {
