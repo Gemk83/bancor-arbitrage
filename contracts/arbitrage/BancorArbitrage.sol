@@ -186,7 +186,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
-        
+
         initialize();
     }
 

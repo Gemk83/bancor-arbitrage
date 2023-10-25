@@ -36,6 +36,7 @@ const {
 
 interface FundingRequest {
     token: string;
+    tokenName: string;
     amount: BigNumber;
     whale: SignerWithAddress;
 }
@@ -72,37 +73,49 @@ const fundAccounts = async () => {
     const fundingRequests = [
         {
             token: NATIVE_TOKEN_ADDRESS,
+            tokenName: 'eth',
             amount: toWei(1000),
             whale: ethWhale
         },
         {
             token: bnt,
+            tokenName: 'bnt',
             amount: toWei(10_000),
             whale: bntWhale
         },
         {
             token: dai,
+            tokenName: 'dai',
             amount: toWei(100_000),
             whale: daiWhale
         },
         {
             token: link,
+            tokenName: 'link',
             amount: toWei(10_000),
             whale: linkWhale
         },
         {
             token: usdc,
+            tokenName: 'usdc',
             amount: toWei(100_000, 6),
             whale: usdcWhale
         },
         {
             token: wbtc,
+            tokenName: 'wbtc',
             amount: toWei(100, 8),
             whale: wbtcWhale
         }
     ];
 
     const devAddresses = DEV_ADDRESSES.split(',');
+
+    for(const fundingRequest of fundingRequests) {
+        if(fundingRequest.token == ZERO_ADDRESS) {
+            Logger.log(`Skipping funding for ${fundingRequest.tokenName}`);
+        }
+    }
 
     for (const account of devAddresses) {
         await fundAccount(account, fundingRequests);

@@ -14,10 +14,9 @@ const mainnet = (address: string) => {
             [DeploymentNetwork.Mainnet]: address,
             [DeploymentNetwork.Tenderly]: address
         }
-    } else {
-        return {
-            [DeploymentNetwork.Mainnet]: address
-        }
+    }
+    return {
+        [DeploymentNetwork.Mainnet]: address
     }
 }
 
@@ -28,6 +27,9 @@ const base = (address: string) => {
             [DeploymentNetwork.Tenderly]: address
         }
     }
+    return {
+        [DeploymentNetwork.Base]: address
+    }
 }
 
 const arbitrum = (address: string) => {
@@ -36,10 +38,9 @@ const arbitrum = (address: string) => {
             [DeploymentNetwork.Arbitrum]: address,
             [DeploymentNetwork.Tenderly]: address
         }
-    } else {
-        return {
-            [DeploymentNetwork.Arbitrum]: address
-        }
+    }
+    return {
+        [DeploymentNetwork.Arbitrum]: address
     }
 }
 
@@ -49,10 +50,9 @@ const sepolia = (address: string) => {
             [DeploymentNetwork.Sepolia]: address,
             [DeploymentNetwork.Tenderly]: address
         }
-    } else {
-        return {
-            [DeploymentNetwork.Sepolia]: address
-        }
+    }
+    return {
+        [DeploymentNetwork.Sepolia]: address
     }
 }
 
