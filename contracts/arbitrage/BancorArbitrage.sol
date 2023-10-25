@@ -892,16 +892,18 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
         for (uint256 i = 0; i < flashloans.length; i = uncheckedInc(i)) {
             Flashloan memory flashloan = flashloans[i];
+            uint256[] memory sourceAmounts = flashloan.sourceAmounts;
+            uint256 numOfSourceTokens = flashloan.sourceTokens.length;
+            uint256 numOfSourceAmounts = sourceAmounts.length;
             if (
-                flashloan.sourceTokens.length == 0 ||
-                flashloan.sourceTokens.length != flashloan.sourceAmounts.length ||
-                (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && flashloan.sourceTokens.length > 1)
+                numOfSourceTokens == 0 ||
+                numOfSourceTokens != numOfSourceAmounts ||
+                (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && numOfSourceTokens > 1)
             ) {
                 revert InvalidFlashloanFormat();
             }
             // check source amounts are not zero in value
-            uint256[] memory sourceAmounts = flashloan.sourceAmounts;
-            for (uint256 j = 0; j < sourceAmounts.length; j = uncheckedInc(j)) {
+            for (uint256 j = 0; j < numOfSourceAmounts; j = uncheckedInc(j)) {
                 if (sourceAmounts[j] == 0) {
                     revert ZeroValue();
                 }
