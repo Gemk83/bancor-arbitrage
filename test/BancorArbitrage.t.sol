@@ -231,7 +231,7 @@ contract BancorArbitrageV2ArbsTest is Test {
      */
     function testShouldBeInitialized() public {
         uint256 version = bancorArbitrage.version();
-        assertEq(version, 7);
+        assertEq(version, 8);
     }
 
     /// --- Reward distribution and protocol transfer tests --- ///
