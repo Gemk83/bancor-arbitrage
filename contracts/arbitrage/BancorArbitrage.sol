@@ -742,14 +742,10 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 address(targetToken)
             );
 
-            if (sourceToken.isNative()) {
-                // perform the trade
-                ICurvePool(poolAddress).exchange{ value: sourceAmount }(i, j, sourceAmount, minTargetAmount);
-            } else {
-                // allow the curve pool to withdraw the source tokens and perform the trade
-                _setPlatformAllowance(sourceToken, poolAddress, sourceAmount);
-                ICurvePool(poolAddress).exchange(i, j, sourceAmount, minTargetAmount);
-            }
+            // allow the curve pool to withdraw the source tokens and perform the trade
+            uint256 val = sourceToken.isNative() ? sourceAmount : 0;
+            _setPlatformAllowance(sourceToken, poolAddress, sourceAmount);
+            ICurvePool(poolAddress).exchange{ value: val }(i, j, sourceAmount, minTargetAmount);
 
             return;
         }
