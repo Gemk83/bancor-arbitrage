@@ -727,13 +727,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
 
-            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            if (remainingSourceTokens > 0) {
-                // transfer any remaining source tokens to the protocol wallet
-                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
-            }
-
             return;
         }
 
