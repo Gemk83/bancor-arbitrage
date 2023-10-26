@@ -742,7 +742,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 revert CurvePoolNotFound();
             }
 
-            (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(
+            (int128 sourceTokenIndex, int128 targetTokenIndex, ) = _curveRegistry.get_coin_indices(
                 poolAddress,
                 address(sourceToken),
                 address(targetToken)
@@ -751,7 +751,12 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // allow the curve pool to withdraw the source tokens and perform the trade
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
             _setPlatformAllowance(sourceToken, poolAddress, sourceAmount);
-            ICurvePool(poolAddress).exchange{ value: val }(i, j, sourceAmount, minTargetAmount);
+            ICurvePool(poolAddress).exchange{ value: val }(
+                sourceTokenIndex,
+                targetTokenIndex,
+                sourceAmount,
+                minTargetAmount
+            );
 
             return;
         }

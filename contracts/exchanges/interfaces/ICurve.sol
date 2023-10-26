@@ -18,9 +18,9 @@ interface ICurveRegistry {
     /**
      * @notice Convert coin addresses to indices for use with pool methods
      * @param pool Pool address
-     * @param sourceToken Coin address to be used as `i` within a pool
-     * @param targetToken Coin address to be used as `j` within a pool
-     * @return int128 `i`, int128 `j`, boolean indicating if `i` and `j` are underlying coins
+     * @param sourceToken Coin address to be used as `sourceTokenIndex` within a pool
+     * @param targetToken Coin address to be used as `targetTokenIndex` within a pool
+     * @return int128 `sourceTokenIndex`, int128 `targetTokenIndex`, boolean indicating if `sourceTokenIndex` and `targetTokenIndex` are underlying coins
      */
     function get_coin_indices(address pool, address sourceToken, address targetToken) external view returns(int128, int128, bool);
 }
@@ -32,11 +32,11 @@ interface ICurvePool {
     /**
      * @notice Perform an exchange between two coins
      * @dev Index values can be found via the `coins` public getter method
-     * @param i Index value for the coin to send
-     * @param j Index valie of the coin to recieve
-     * @param dx Amount of `i` being exchanged
-     * @param min_dy Minimum amount of `j` to receive
-     * @return Actual amount of `j` received
+     * @param sourceTokenIndex Index value for the coin to send
+     * @param targetTokenIndex Index valie of the coin to recieve
+     * @param dx Amount of `sourceToken` being exchanged
+     * @param min_dy Minimum amount of `targetToken` to receive
+     * @return Actual amount of `targetToken` received
      */
-    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256);
+    function exchange(int128 sourceTokenIndex, int128 targetTokenIndex, uint256 dx, uint256 min_dy) external payable returns (uint256);
 }
