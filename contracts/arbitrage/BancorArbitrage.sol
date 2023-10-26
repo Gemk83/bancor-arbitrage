@@ -47,6 +47,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceAmountTooHigh();
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
+    error PoolNotFound();
 
     // trade args v2
     struct TradeRoute {
@@ -736,6 +737,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 address(targetToken),
                 customInt
             );
+
+            if (poolAddress == address(0)) {
+                revert PoolNotFound();
+            }
+
             (int128 i, int128 j, ) = _curveRegistry.get_coin_indices(
                 poolAddress,
                 address(sourceToken),
