@@ -226,7 +226,7 @@ contract MockExchanges {
     }
 
     /**
-     * ICurveRegistry function
+     * ICurveRegistry function which finds an available pool for exchanging two coins
      */
     //solhint-disable-next-line func-name-mixedcase
     function find_pool_for_coins(address, address, uint256) external view returns (address) {
@@ -234,7 +234,7 @@ contract MockExchanges {
     }
 
     /**
-     * ICurveRegistry function
+     * ICurveRegistry function which converts coin addresses to indices for use with pool methods
      */
     //solhint-disable-next-line func-name-mixedcase
     function get_coin_indices(address, address _from, address _to) external view returns (int128, int128, bool) {
@@ -242,7 +242,7 @@ contract MockExchanges {
     }
 
     /**
-     * ICurvePool function
+     * ICurvePool function which performs an exchange between two coins
      */
     //solhint-disable-next-line var-name-mixedcase
     function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256) {
