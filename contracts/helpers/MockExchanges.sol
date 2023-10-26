@@ -237,8 +237,12 @@ contract MockExchanges {
      * ICurveRegistry function which converts coin addresses to indices for use with pool methods
      */
     //solhint-disable-next-line func-name-mixedcase
-    function get_coin_indices(address, address _from, address _to) external view returns (int128, int128, bool) {
-        return (_curveTokenToIndex[Token(_from)], _curveTokenToIndex[Token(_to)], false);
+    function get_coin_indices(
+        address,
+        address sourceToken,
+        address targetToken
+    ) external view returns (int128, int128, bool) {
+        return (_curveTokenToIndex[Token(sourceToken)], _curveTokenToIndex[Token(targetToken)], false);
     }
 
     /**
