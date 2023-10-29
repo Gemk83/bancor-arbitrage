@@ -37,7 +37,6 @@ contract MockExchanges {
 
     // mapping for tokens tradeable on curve
     mapping(int128 => Token) private _curveIndexToToken;
-    mapping(Token => int128) private _curveTokenToIndex;
 
     error InsufficientFlashLoanReturn();
     error NotWhitelisted();
@@ -222,27 +221,6 @@ contract MockExchanges {
 
     function setCurveToken(int128 index, Token token) external {
         _curveIndexToToken[index] = token;
-        _curveTokenToIndex[token] = index;
-    }
-
-    /**
-     * ICurveRegistry function which finds an available pool for exchanging two coins
-     */
-    //solhint-disable-next-line func-name-mixedcase
-    function find_pool_for_coins(address, address, uint256) external view returns (address) {
-        return address(this);
-    }
-
-    /**
-     * ICurveRegistry function which converts coin addresses to indices for use with pool methods
-     */
-    //solhint-disable-next-line func-name-mixedcase
-    function get_coin_indices(
-        address,
-        address sourceToken,
-        address targetToken
-    ) external view returns (int128, int128, bool) {
-        return (_curveTokenToIndex[Token(sourceToken)], _curveTokenToIndex[Token(targetToken)], false);
     }
 
     /**

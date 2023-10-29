@@ -26,7 +26,7 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/inte
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { ICarbonPOL } from "../contracts/exchanges/interfaces/ICarbonPOL.sol";
-import { ICurveRegistry } from "../contracts/exchanges/interfaces/ICurve.sol";
+import { ICurvePool } from "../contracts/exchanges/interfaces/ICurvePool.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
@@ -2271,8 +2271,7 @@ contract BancorArbitrageV2ArbsTest is Test {
             sushiswapRouter: IUniswapV2Router02(_exchanges),
             carbonController: ICarbonController(_exchanges),
             balancerVault: IBalancerVault(_balancerVault),
-            carbonPOL: ICarbonPOL(_exchanges),
-            curveRegistry: ICurveRegistry(_exchanges)
+            carbonPOL: ICarbonPOL(_exchanges)
         });
     }
 
@@ -2299,8 +2298,12 @@ contract BancorArbitrageV2ArbsTest is Test {
     function setCurveTokens(BancorArbitrage.TradeRoute[] memory routes) private {
         for (uint256 i = 0; i < routes.length; i++) {
             if (PlatformId(routes[i].platformId) == PlatformId.CURVE) {
-                exchanges.setCurveToken(int128(int256(i * 2 + 0)), routes[i].sourceToken);
-                exchanges.setCurveToken(int128(int256(i * 2 + 1)), routes[i].targetToken);
+                uint256 sourceTokenIndex = i * 2 + 0;
+                uint256 targetTokenIndex = i * 2 + 1;
+                exchanges.setCurveToken(int128(int256(sourceTokenIndex)), routes[i].sourceToken);
+                exchanges.setCurveToken(int128(int256(targetTokenIndex)), routes[i].targetToken);
+                routes[i].customInt = sourceTokenIndex | (targetTokenIndex << 128);
+                routes[i].customAddress = address(exchanges);
             }
         }
     }

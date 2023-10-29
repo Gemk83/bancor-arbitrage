@@ -23,7 +23,7 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBa
 import { IBancorNetworkV2 } from "../exchanges/interfaces/IBancorNetworkV2.sol";
 import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
-import { ICurveRegistry, ICurvePool } from "../exchanges/interfaces/ICurve.sol";
+import { ICurvePool } from "../exchanges/interfaces/ICurvePool.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
 
 /**
@@ -47,7 +47,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceAmountTooHigh();
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
-    error CurvePoolNotFound();
+    error InvalidCurvePool();
 
     // trade args v2
     struct TradeRoute {
@@ -85,7 +85,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         ICarbonController carbonController;
         IBalancerVault balancerVault;
         ICarbonPOL carbonPOL;
-        ICurveRegistry curveRegistry;
     }
 
     // platform ids
@@ -133,9 +132,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
     // Carbon POL contract
     ICarbonPOL internal immutable _carbonPOL;
-
-    // Curve Registry contract
-    ICurveRegistry internal immutable _curveRegistry;
 
     // Protocol wallet address
     address internal immutable _protocolWallet;
@@ -190,7 +186,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         validAddress(address(platforms.carbonController))
         validAddress(address(platforms.balancerVault))
         validAddress(address(platforms.carbonPOL))
-        validAddress(address(platforms.curveRegistry))
     {
         _bnt = initBnt;
         _weth = IERC20(platforms.uniV2Router.WETH());
@@ -203,7 +198,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
-        _curveRegistry = platforms.curveRegistry;
     }
 
     /**
@@ -732,28 +726,16 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
 
         if (platformId == PLATFORM_ID_CURVE) {
-            address poolAddress = _curveRegistry.find_pool_for_coins(
-                address(sourceToken),
-                address(targetToken),
-                customInt
-            );
-
-            if (poolAddress == address(0)) {
-                revert CurvePoolNotFound();
+            if (customAddress == address(0)) {
+                revert InvalidCurvePool();
             }
-
-            (int128 sourceTokenIndex, int128 targetTokenIndex, ) = _curveRegistry.get_coin_indices(
-                poolAddress,
-                address(sourceToken),
-                address(targetToken)
-            );
 
             // allow the curve pool to withdraw the source tokens and perform the trade
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
-            _setPlatformAllowance(sourceToken, poolAddress, sourceAmount);
-            ICurvePool(poolAddress).exchange{ value: val }(
-                sourceTokenIndex,
-                targetTokenIndex,
+            _setPlatformAllowance(sourceToken, customAddress, sourceAmount);
+            ICurvePool(customAddress).exchange{ value: val }(
+                int128(int256(customInt)),
+                int128(int256(customInt >> 128)),
                 sourceAmount,
                 minTargetAmount
             );
