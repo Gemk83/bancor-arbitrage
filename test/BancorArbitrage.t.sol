@@ -26,7 +26,6 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../contracts/exchanges/inte
 import { ICarbonController, TradeAction } from "../contracts/exchanges/interfaces/ICarbonController.sol";
 import { IVault as IBalancerVault } from "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import { ICarbonPOL } from "../contracts/exchanges/interfaces/ICarbonPOL.sol";
-import { ICurvePool } from "../contracts/exchanges/interfaces/ICurvePool.sol";
 import { PPM_RESOLUTION } from "../contracts/utility/Constants.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 
