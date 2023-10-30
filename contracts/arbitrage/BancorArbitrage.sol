@@ -734,7 +734,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
             // allow the curve pool to withdraw the source tokens and perform the trade
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
-            _setPlatformAllowance(sourceToken, customAddress, sourceAmount);
+            _setPlatformAllowance(sourceToken, address(curvePool), sourceAmount);
             curvePool.exchange{ value: val }(
                 int128(int256(customInt)),
                 int128(int256(customInt >> 128)),
