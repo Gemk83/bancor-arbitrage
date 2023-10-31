@@ -1,6 +1,6 @@
-import { BancorArbitrage, ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
-import { toPPM, toWei } from '../../utils/Types';
+import { BancorArbitrage, ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
+import { toPPM, toWei } from '../../../utils/Types';
 import { expect } from 'chai';
 
 describeDeployment(__filename, () => {

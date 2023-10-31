@@ -1,5 +1,5 @@
-import { ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
+import { ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
 import { expect } from 'chai';
 import { getNamedAccounts } from 'hardhat';
 
@@ -16,6 +16,6 @@ describeDeployment(__filename, () => {
     });
 
     it('should deploy and configure the proxy admin contract', async () => {
-        await expect(await proxyAdmin.owner()).to.equal(deployer);
+        expect(await proxyAdmin.owner()).to.equal(deployer);
     });
 });

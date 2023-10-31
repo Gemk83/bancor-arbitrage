@@ -1,15 +1,7 @@
-import {
-    DeployedContracts,
-    InstanceName,
-    execute,
-    isMainnet,
-    setDeploymentMetadata,
-    upgradeProxy
-} from '../../utils/Deploy';
-import { MIN_BNT_BURN } from '../../utils/Constants';
+import { DeployedContracts, InstanceName, isMainnet, setDeploymentMetadata, upgradeProxy } from '../../../utils/Deploy';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { BancorArbitrage } from '../../typechain-types';
+import { BancorArbitrage } from '../../../typechain-types';
 
 const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironment) => {
     const {
@@ -21,16 +13,18 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         protocolWallet,
         bancorNetworkV2,
         bancorNetworkV3,
-        carbonController
+        carbonController,
+        balancerVault
     } = await getNamedAccounts();
 
-    const exchanges: BancorArbitrage.ExchangesStruct = {
+    const platforms: BancorArbitrage.PlatformsStruct = {
         bancorNetworkV2,
         bancorNetworkV3,
         uniV2Router: uniswapV2Router02,
         uniV3Router: uniswapV3Router,
         sushiswapRouter: sushiSwapRouter,
-        carbonController
+        carbonController,
+        balancerVault
     };
 
     if (isMainnet()) {
@@ -38,12 +32,13 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
             {
                 name: InstanceName.BancorArbitrage,
                 from: deployer,
-                args: [bnt, protocolWallet, exchanges]
+                args: [bnt, protocolWallet, platforms]
             },
             true
         );
     } else {
         const mockExchanges = await DeployedContracts.MockExchanges.deployed();
+        const mockBalancerVault = await DeployedContracts.MockBalancerVault.deployed();
 
         await upgradeProxy(
             {
@@ -58,21 +53,14 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
                         uniV2Router: mockExchanges.address,
                         uniV3Router: mockExchanges.address,
                         sushiswapRouter: mockExchanges.address,
-                        carbonController: mockExchanges.address
+                        carbonController: mockExchanges.address,
+                        balancerVault: mockBalancerVault.address
                     }
                 ]
             },
             true
         );
     }
-
-    // set min BNT burn
-    await execute({
-        name: InstanceName.BancorArbitrage,
-        methodName: 'setMinBurn',
-        args: [MIN_BNT_BURN],
-        from: deployer
-    });
 
     return true;
 };

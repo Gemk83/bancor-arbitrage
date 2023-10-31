@@ -1,15 +1,13 @@
-import { shouldHaveGap } from '../../utils/Proxy';
-import { BancorArbitrage, ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
-import { toPPM, toWei } from '../../utils/Types';
+import { MIN_BNT_BURN } from '../../../utils/Constants';
+import { BancorArbitrage, ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
+import { toPPM, toWei } from '../../../utils/Types';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
 describeDeployment(__filename, () => {
     let proxyAdmin: ProxyAdmin;
     let bancorArbitrage: BancorArbitrage;
-
-    shouldHaveGap('BancorArbitrage', '_rewards');
 
     beforeEach(async () => {
         proxyAdmin = await DeployedContracts.ProxyAdmin.deployed();
@@ -18,7 +16,7 @@ describeDeployment(__filename, () => {
 
     it('should upgrade correctly', async () => {
         expect(await proxyAdmin.getProxyAdmin(bancorArbitrage.address)).to.equal(proxyAdmin.address);
-        expect(await bancorArbitrage.version()).to.equal(6);
+        expect(await bancorArbitrage.version()).to.equal(3);
         const implementationAddress = await proxyAdmin.getProxyImplementation(bancorArbitrage.address);
         const bancorArbitrageImplementation: BancorArbitrage = await ethers.getContractAt(
             'BancorArbitrage',
@@ -27,11 +25,12 @@ describeDeployment(__filename, () => {
 
         const arbRewards = await bancorArbitrage.rewards();
         expect(arbRewards.percentagePPM).to.equal(toPPM(50));
-        expect(arbRewards.maxAmount.toString()).to.equal(toWei(1000).toString());
+        expect(arbRewards.maxAmount.toString()).to.equal(toWei(100).toString());
+
+        const minBntBurn = await bancorArbitrage.minBurn();
+        expect(minBntBurn).to.be.eq(MIN_BNT_BURN);
 
         // test implementation has been initialized
-        // hardcoding gas limit to avoid gas estimation attempts (which get rejected instead of reverted)
-        const tx = bancorArbitrageImplementation.initialize({ gasLimit: 6000000 });
-        await expect(await tx).to.be.reverted;
+        await expect(bancorArbitrageImplementation.initialize()).to.be.rejectedWith('execution reverted');
     });
 });

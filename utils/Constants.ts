@@ -8,9 +8,18 @@ const {
 
 export enum DeploymentNetwork {
     Mainnet = 'mainnet',
+    Base = 'base',
+    Arbitrum = 'arbitrum',
     Sepolia = 'sepolia',
     Hardhat = 'hardhat',
     Tenderly = 'tenderly'
+}
+
+export enum NetworkId {
+    Mainnet = '1',
+    Base = '8453',
+    Arbitrum = '42161',
+    Sepolia = '11155111'
 }
 
 export const MAX_UINT256 = MaxUint256;

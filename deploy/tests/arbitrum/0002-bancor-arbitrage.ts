@@ -1,6 +1,6 @@
-import { BancorArbitrage, ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
-import { toPPM, toWei } from '../../utils/Types';
+import { BancorArbitrage, ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
+import { toPPM, toWei } from '../../../utils/Types';
 import { expect } from 'chai';
 
 describeDeployment(__filename, () => {
@@ -14,7 +14,7 @@ describeDeployment(__filename, () => {
 
     it('should deploy and configure the bancor arbitrage contract', async () => {
         expect(await proxyAdmin.getProxyAdmin(bancorArbitrage.address)).to.equal(proxyAdmin.address);
-        expect(await bancorArbitrage.version()).to.equal(2);
+        expect(await bancorArbitrage.version()).to.equal(8);
 
         const arbRewards = await bancorArbitrage.rewards();
         expect(arbRewards.percentagePPM).to.equal(toPPM(10));

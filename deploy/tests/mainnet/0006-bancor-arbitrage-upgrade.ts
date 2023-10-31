@@ -1,7 +1,7 @@
-import { shouldHaveGap } from '../../utils/Proxy';
-import { BancorArbitrage, ProxyAdmin } from '../../components/Contracts';
-import { DeployedContracts, describeDeployment } from '../../utils/Deploy';
-import { toPPM, toWei } from '../../utils/Types';
+import { shouldHaveGap } from '../../../utils/Proxy';
+import { BancorArbitrage, ProxyAdmin } from '../../../components/Contracts';
+import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
+import { toPPM, toWei } from '../../../utils/Types';
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
@@ -18,7 +18,7 @@ describeDeployment(__filename, () => {
 
     it('should upgrade correctly', async () => {
         expect(await proxyAdmin.getProxyAdmin(bancorArbitrage.address)).to.equal(proxyAdmin.address);
-        expect(await bancorArbitrage.version()).to.equal(4);
+        expect(await bancorArbitrage.version()).to.equal(5);
         const implementationAddress = await proxyAdmin.getProxyImplementation(bancorArbitrage.address);
         const bancorArbitrageImplementation: BancorArbitrage = await ethers.getContractAt(
             'BancorArbitrage',

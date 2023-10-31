@@ -167,26 +167,16 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     );
 
     /**
-     * @dev a "virtual" constructor that is only used to set immutable state variables
+     * @dev used to set immutable state variables and initialize the implementation
      */
     constructor(
         IERC20 initBnt,
+        IERC20 initWeth,
         address initProtocolWallet,
         Platforms memory platforms
-    )
-        validAddress(address(initBnt))
-        validAddress(address(initProtocolWallet))
-        validAddress(address(platforms.bancorNetworkV2))
-        validAddress(address(platforms.bancorNetworkV3))
-        validAddress(address(platforms.uniV2Router))
-        validAddress(address(platforms.uniV3Router))
-        validAddress(address(platforms.sushiswapRouter))
-        validAddress(address(platforms.carbonController))
-        validAddress(address(platforms.balancerVault))
-        validAddress(address(platforms.carbonPOL))
-    {
+    ) validAddress(address(initWeth)) validAddress(address(initProtocolWallet)) {
         _bnt = initBnt;
-        _weth = IERC20(platforms.uniV2Router.WETH());
+        _weth = initWeth;
         _protocolWallet = initProtocolWallet;
         _bancorNetworkV2 = platforms.bancorNetworkV2;
         _bancorNetworkV3 = platforms.bancorNetworkV3;
@@ -196,12 +186,14 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         _carbonController = platforms.carbonController;
         _balancerVault = platforms.balancerVault;
         _carbonPOL = platforms.carbonPOL;
+
+        initialize();
     }
 
     /**
      * @dev fully initializes the contract and its parents
      */
-    function initialize() external initializer {
+    function initialize() public initializer {
         __BancorArbitrage_init();
     }
 
@@ -233,7 +225,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 7;
+        return 8;
     }
 
     /**
