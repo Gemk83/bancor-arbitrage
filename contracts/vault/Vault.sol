@@ -4,24 +4,23 @@ pragma solidity 0.8.19;
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-import { Upgradeable } from "../utility/Upgradeable.sol";
 import { Token } from "../token/Token.sol";
 import { TokenLibrary } from "../token/TokenLibrary.sol";
 
 import { Utils, AccessDenied } from "../utility/Utils.sol";
 
-contract Vault is ReentrancyGuardUpgradeable, Utils, Upgradeable {
+contract Vault is ReentrancyGuard, AccessControlEnumerable, Utils {
     using Address for address payable;
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
+    // the admin role is used to allow a non-proxy admin to perform additional setup during contract deployment
+    bytes32 internal constant ROLE_ADMIN = keccak256("ROLE_ADMIN");
     // the asset manager role is required to access all the funds
     bytes32 private constant ROLE_ASSET_MANAGER = keccak256("ROLE_ASSET_MANAGER");
-
-    // upgrade forward-compatibility storage gap
-    uint256[MAX_GAP] private __gap;
 
     /**
      * @dev triggered when tokens have been withdrawn from the vault
@@ -32,33 +31,11 @@ contract Vault is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev used to initialize the implementation
      */
     constructor() {
-        initialize();
-    }
-
-    /**
-     * @dev fully initializes the contract and its parents
-     */
-    function initialize() public initializer {
-        __Vault_init();
-    }
-
-    // solhint-disable func-name-mixedcase
-
-    /**
-     * @dev initializes the contract and its parents
-     */
-    function __Vault_init() internal onlyInitializing {
-        __Upgradeable_init();
-        __ReentrancyGuard_init();
-
-        __Vault_init_unchained();
-    }
-
-    /**
-     * @dev performs contract-specific initialization
-     */
-    function __Vault_init_unchained() internal onlyInitializing {
+        // set up administrative roles
+        _setRoleAdmin(ROLE_ADMIN, ROLE_ADMIN);
         _setRoleAdmin(ROLE_ASSET_MANAGER, ROLE_ADMIN);
+        // allow the deployer to initially be the admin of the contract
+        _setupRole(ROLE_ADMIN, msg.sender);
     }
 
     // solhint-enable func-name-mixedcase
@@ -69,10 +46,10 @@ contract Vault is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     receive() external payable {}
 
     /**
-     * @inheritdoc Upgradeable
+     * @dev returns the admin role
      */
-    function version() public pure override(Upgradeable) returns (uint16) {
-        return 1;
+    function roleAdmin() external pure returns (bytes32) {
+        return ROLE_ADMIN;
     }
 
     /**
@@ -89,7 +66,10 @@ contract Vault is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         Token token,
         address payable target,
         uint256 amount
-    ) external validAddress(target) nonReentrant whenAuthorized(msg.sender) {
+    ) external validAddress(target) nonReentrant {
+        if (!hasRole(ROLE_ASSET_MANAGER, msg.sender)) {
+            revert AccessDenied();
+        }
         if (amount == 0) {
             return;
         }
@@ -98,16 +78,5 @@ contract Vault is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         token.unsafeTransfer(target, amount);
 
         emit FundsWithdrawn({ token: token, caller: msg.sender, target: target, amount: amount });
-    }
-
-    /**
-     * @dev allows execution only by an authorized operation
-     */
-    modifier whenAuthorized(address caller) {
-        if (!hasRole(ROLE_ASSET_MANAGER, caller)) {
-            revert AccessDenied();
-        }
-
-        _;
     }
 }

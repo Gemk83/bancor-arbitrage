@@ -11,7 +11,6 @@ import { Vault } from "../contracts/vault/Vault.sol";
 import { Token } from "../contracts/token/Token.sol";
 import { TokenLibrary } from "../contracts/token/TokenLibrary.sol";
 import { AccessDenied, InvalidAddress } from "../contracts/utility/Utils.sol";
-import { TransparentUpgradeableProxyImmutable } from "../contracts/utility/TransparentUpgradeableProxyImmutable.sol";
 import { TestERC20Token } from "../contracts/helpers/TestERC20Token.sol";
 import { TestReentrancyVault } from "../contracts/helpers/TestReentrancyVault.sol";
 
@@ -54,13 +53,6 @@ contract VaultTest is Test {
         // deploy proxy admin
         proxyAdmin = new ProxyAdmin();
 
-        bytes memory selector = abi.encodeWithSelector(vault.initialize.selector);
-        // deploy vault proxy
-        address vaultProxy = address(
-            new TransparentUpgradeableProxyImmutable(address(vault), payable(address(proxyAdmin)), selector)
-        );
-        vault = Vault(payable(vaultProxy));
-
         // deploy test token
         token = new TestERC20Token("TKN1", "TKN1", 1_000_000_000 ether);
 
@@ -81,9 +73,6 @@ contract VaultTest is Test {
 
     /// @dev test should be initialized properly
     function testShouldBeInitializedProperly() public {
-        uint256 version = vault.version();
-        assertEq(version, 1);
-
         assertEq(ROLE_ADMIN, vault.roleAdmin());
         assertEq(ROLE_ASSET_MANAGER, vault.roleAssetManager());
 
@@ -92,12 +81,6 @@ contract VaultTest is Test {
 
         assertEq(1, vault.getRoleMemberCount(ROLE_ADMIN));
         assertEq(1, vault.getRoleMemberCount(ROLE_ASSET_MANAGER));
-    }
-
-    /// @dev test should revert when attempting to reinitialize
-    function testShouldRevertWhenAttemptingToReinitialize() public {
-        vm.expectRevert("Initializable: contract is already initialized");
-        vault.initialize();
     }
 
     /// @dev test should revert when attempting to withdraw funds without the asset manager role

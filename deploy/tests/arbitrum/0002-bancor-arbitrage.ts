@@ -1,3 +1,5 @@
+import { getNamedAccounts } from 'hardhat';
+import { keccak256, toUtf8Bytes } from 'ethers/lib/utils';
 import { BancorArbitrage, ProxyAdmin, Vault } from '../../../components/Contracts';
 import { DeployedContracts, describeDeployment } from '../../../utils/Deploy';
 import { toPPM, toWei } from '../../../utils/Types';
@@ -15,8 +17,9 @@ describeDeployment(__filename, () => {
     });
 
     it('should deploy and configure the vault contract', async () => {
-        expect(await proxyAdmin.getProxyAdmin(vault.address)).to.equal(proxyAdmin.address);
-        expect(await vault.version()).to.equal(1);
+        const adminRole = keccak256(toUtf8Bytes('ROLE_ADMIN'));
+        const { deployer } = await getNamedAccounts();
+        expect(await vault.getRoleMember(adminRole, 0)).to.equal(deployer);
     });
 
     it('should deploy and configure the bancor arbitrage contract', async () => {

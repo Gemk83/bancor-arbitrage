@@ -1,4 +1,4 @@
-import { DeployedContracts, deployProxy, InstanceName, setDeploymentMetadata } from '../../../utils/Deploy';
+import { deploy, DeployedContracts, deployProxy, InstanceName, setDeploymentMetadata } from '../../../utils/Deploy';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BancorArbitrage } from '../../../typechain-types';
@@ -30,7 +30,7 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
     };
 
     // Deploy Vault contract which will serve as the protocol wallet
-    await deployProxy({
+    await deploy({
         name: InstanceName.Vault,
         from: deployer,
         args: []
