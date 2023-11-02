@@ -60,7 +60,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     uint256 private constant AMOUNT = 1000 ether;
     uint256 private constant MIN_LIQUIDITY_FOR_TRADING = 1000 ether;
     uint256 private constant FIRST_EXCHANGE_ID = 1;
-    uint256 private constant LAST_EXCHANGE_ID = 8;
+    uint256 private constant LAST_EXCHANGE_ID = 9;
 
     enum PlatformId {
         INVALID,
@@ -71,7 +71,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         SUSHISWAP,
         CARBON,
         BALANCER,
-        CARBON_POL
+        CARBON_POL,
+        CURVE
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
@@ -786,6 +787,7 @@ contract BancorArbitrageV2ArbsTest is Test {
                 if (!isValidTestConfiguration(platformId, routes)) {
                     continue;
                 }
+                setCurveTokens(routes);
                 vm.startPrank(user1);
                 // approve token if user-funded arb
                 if (userFunded) {
@@ -1093,6 +1095,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         if (!isValidTestConfiguration(platformId, routes)) {
             return;
         }
+        setCurveTokens(routes);
         // trade
         executeArbitrage(flashloans, routes, userFunded);
     }
@@ -2227,5 +2230,18 @@ contract BancorArbitrageV2ArbsTest is Test {
             }
         }
         return true;
+    }
+
+    function setCurveTokens(BancorArbitrage.TradeRoute[] memory routes) private {
+        for (uint256 i = 0; i < routes.length; i++) {
+            if (PlatformId(routes[i].platformId) == PlatformId.CURVE) {
+                uint256 sourceTokenIndex = i * 2 + 0;
+                uint256 targetTokenIndex = i * 2 + 1;
+                exchanges.setCurveToken(int128(int256(sourceTokenIndex)), routes[i].sourceToken);
+                exchanges.setCurveToken(int128(int256(targetTokenIndex)), routes[i].targetToken);
+                routes[i].customInt = sourceTokenIndex | (targetTokenIndex << 128);
+                routes[i].customAddress = address(exchanges);
+            }
+        }
     }
 }

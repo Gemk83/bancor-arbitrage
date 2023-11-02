@@ -23,8 +23,8 @@ import { IBancorNetwork, IFlashLoanRecipient } from "../exchanges/interfaces/IBa
 import { IBancorNetworkV2 } from "../exchanges/interfaces/IBancorNetworkV2.sol";
 import { ICarbonController, TradeAction } from "../exchanges/interfaces/ICarbonController.sol";
 import { ICarbonPOL } from "../exchanges/interfaces/ICarbonPOL.sol";
+import { ICurvePool } from "../exchanges/interfaces/ICurvePool.sol";
 import { PPM_RESOLUTION } from "../utility/Constants.sol";
-import { MathEx } from "../utility/MathEx.sol";
 
 /**
  * @dev BancorArbitrage contract
@@ -47,6 +47,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceAmountTooHigh();
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
+    error InvalidCurvePool();
 
     // trade args v2
     struct TradeRoute {
@@ -95,6 +96,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_CARBON = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
+    uint16 public constant PLATFORM_ID_CURVE = 9;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -712,12 +714,25 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
 
-            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            if (remainingSourceTokens > 0) {
-                // transfer any remaining source tokens to the protocol wallet
-                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_CURVE) {
+            ICurvePool curvePool = ICurvePool(customAddress);
+
+            if (address(curvePool) == address(0)) {
+                revert InvalidCurvePool();
             }
+
+            // allow the curve pool to withdraw the source tokens and perform the trade
+            uint256 val = sourceToken.isNative() ? sourceAmount : 0;
+            _setPlatformAllowance(sourceToken, address(curvePool), sourceAmount);
+            curvePool.exchange{ value: val }(
+                int128(int256(customInt)),
+                int128(int256(customInt >> 128)),
+                sourceAmount,
+                minTargetAmount
+            );
 
             return;
         }
@@ -741,7 +756,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         for (uint256 i = 0; i < tokenLength; i = uncheckedInc(i)) {
             Token sourceToken = Token(sourceTokens[i]);
             uint256 balance = sourceToken.balanceOf(address(this));
-            uint256 rewardAmount = MathEx.mulDivF(balance, _rewards.percentagePPM, PPM_RESOLUTION);
+            uint256 rewardAmount = (balance * _rewards.percentagePPM) / PPM_RESOLUTION;
             uint256 protocolAmount;
             // safe because _rewards.percentagePPM <= PPM_RESOLUTION
             unchecked {
@@ -844,18 +859,18 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         }
         for (uint256 i = 0; i < flashloans.length; i = uncheckedInc(i)) {
             Flashloan memory flashloan = flashloans[i];
-            if (flashloan.sourceTokens.length == 0) {
-                revert InvalidFlashloanFormat();
-            }
-            if (flashloan.sourceTokens.length != flashloan.sourceAmounts.length) {
-                revert InvalidFlashloanFormat();
-            }
-            if (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && flashloan.sourceTokens.length > 1) {
+            uint256[] memory sourceAmounts = flashloan.sourceAmounts;
+            uint256 numOfSourceTokens = flashloan.sourceTokens.length;
+            uint256 numOfSourceAmounts = sourceAmounts.length;
+            if (
+                numOfSourceTokens == 0 ||
+                numOfSourceTokens != numOfSourceAmounts ||
+                (flashloan.platformId == PLATFORM_ID_BANCOR_V3 && numOfSourceTokens > 1)
+            ) {
                 revert InvalidFlashloanFormat();
             }
             // check source amounts are not zero in value
-            uint256[] memory sourceAmounts = flashloan.sourceAmounts;
-            for (uint256 j = 0; j < sourceAmounts.length; j = uncheckedInc(j)) {
+            for (uint256 j = 0; j < numOfSourceAmounts; j = uncheckedInc(j)) {
                 if (sourceAmounts[j] == 0) {
                     revert ZeroValue();
                 }

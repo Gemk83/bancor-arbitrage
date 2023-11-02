@@ -35,6 +35,9 @@ contract MockExchanges {
     // mapping for tokens tradeable on v3
     mapping(Token => address) public collectionByPool;
 
+    // mapping for tokens tradeable on curve
+    mapping(int128 => Token) private _curveIndexToToken;
+
     error InsufficientFlashLoanReturn();
     error NotWhitelisted();
     error ZeroValue();
@@ -214,6 +217,18 @@ contract MockExchanges {
      */
     function trade(Token token, uint128 amount) external payable returns (uint128) {
         return mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0).toUint128();
+    }
+
+    function setCurveToken(int128 index, Token token) external {
+        _curveIndexToToken[index] = token;
+    }
+
+    /**
+     * ICurvePool function which performs an exchange between two coins
+     */
+    //solhint-disable-next-line var-name-mixedcase
+    function exchange(int128 i, int128 j, uint256 dx, uint256 min_dy) external payable returns (uint256) {
+        return mockSwap(_curveIndexToToken[i], _curveIndexToToken[j], dx, msg.sender, block.timestamp, min_dy);
     }
 
     /**
