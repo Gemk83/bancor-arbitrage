@@ -190,8 +190,6 @@ contract VaultTest is Test {
         vm.startPrank(admin);
         TestReentrancyVault testReentrancy = new TestReentrancyVault(vault, Token(address(token)));
         // grant withdrawal role to testReentrancy contract
-
-        // grant asset manager role to user2
         vault.grantRole(ROLE_ASSET_MANAGER, address(testReentrancy));
 
         uint256 withdrawAmount = 1000;

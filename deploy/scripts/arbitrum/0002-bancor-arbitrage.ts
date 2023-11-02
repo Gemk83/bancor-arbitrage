@@ -38,6 +38,7 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
 
     const vault = await DeployedContracts.Vault.deployed();
 
+    // Deploy BancorArbitrage contract
     await deployProxy({
         name: InstanceName.BancorArbitrage,
         from: deployer,
