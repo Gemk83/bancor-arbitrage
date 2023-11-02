@@ -17,7 +17,7 @@ contract Vault is ReentrancyGuard, AccessControlEnumerable, Utils {
     using SafeERC20 for IERC20;
     using TokenLibrary for Token;
 
-    // the admin role is used to allow a non-proxy admin to perform additional setup during contract deployment
+    // the admin role is used to grant and revoke the asset manager role
     bytes32 internal constant ROLE_ADMIN = keccak256("ROLE_ADMIN");
     // the asset manager role is required to access all the funds
     bytes32 private constant ROLE_ASSET_MANAGER = keccak256("ROLE_ASSET_MANAGER");
