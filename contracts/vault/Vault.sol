@@ -70,6 +70,7 @@ contract Vault is ReentrancyGuard, AccessControlEnumerable, Utils {
         if (!hasRole(ROLE_ASSET_MANAGER, msg.sender)) {
             revert AccessDenied();
         }
+
         if (amount == 0) {
             return;
         }
