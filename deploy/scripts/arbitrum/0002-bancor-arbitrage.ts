@@ -1,4 +1,4 @@
-import { deployProxy, InstanceName, setDeploymentMetadata } from '../../../utils/Deploy';
+import { deploy, DeployedContracts, deployProxy, InstanceName, setDeploymentMetadata } from '../../../utils/Deploy';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { BancorArbitrage } from '../../../typechain-types';
@@ -8,7 +8,6 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         deployer,
         bnt,
         weth,
-        protocolWallet,
         bancorNetworkV2,
         bancorNetworkV3,
         uniswapV2Router02,
@@ -30,10 +29,20 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
         carbonPOL
     };
 
+    // Deploy Vault contract which will serve as the protocol wallet
+    await deploy({
+        name: InstanceName.Vault,
+        from: deployer,
+        args: []
+    });
+
+    const vault = await DeployedContracts.Vault.deployed();
+
+    // Deploy BancorArbitrage contract
     await deployProxy({
         name: InstanceName.BancorArbitrage,
         from: deployer,
-        args: [bnt, weth, protocolWallet, platforms]
+        args: [bnt, weth, vault.address, platforms]
     });
 
     return true;

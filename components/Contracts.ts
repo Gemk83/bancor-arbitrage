@@ -1,6 +1,7 @@
 /* eslint-disable camelcase */
 import {
     BancorArbitrage__factory,
+    Vault__factory,
     ERC20__factory,
     MockExchanges__factory,
     TestERC20Token__factory,
@@ -17,6 +18,7 @@ const getContracts = (signer?: Signer) => ({
     connect: (signer: Signer) => getContracts(signer),
 
     BancorArbitrage: deployOrAttach('BancorArbitrage', BancorArbitrage__factory, signer),
+    Vault: deployOrAttach('Vault', Vault__factory, signer),
     ERC20: deployOrAttach('ERC20', ERC20__factory, signer),
     MockExchanges: deployOrAttach('MockExchanges', MockExchanges__factory, signer),
     TestERC20Token: deployOrAttach('TestERC20Token', TestERC20Token__factory, signer),

@@ -1,5 +1,5 @@
 import { ArtifactData } from '../components/ContractBuilder';
-import { BancorArbitrage, IVersioned, MockBalancerVault, MockExchanges, ProxyAdmin } from '../components/Contracts';
+import { BancorArbitrage, IVersioned, MockExchanges, ProxyAdmin, Vault } from '../components/Contracts';
 import Logger from './Logger';
 import { DeploymentNetwork, ZERO_BYTES, PROXY_CONTRACT, INITIALIZE, POST_UPGRADE, NetworkId } from './Constants';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -73,6 +73,7 @@ enum LegacyInstanceNameV3 {
 enum NewInstanceName {
     AutoCompoundingRewards = 'AutoCompoundingRewards',
     BancorArbitrage = 'BancorArbitrage',
+    Vault = 'Vault',
     BancorNetworkInfo = 'BancorNetworkInfo',
     BancorNetworkProxy = 'BancorNetworkProxy',
     BancorNetwork = 'BancorNetwork',
@@ -114,8 +115,8 @@ const deployed = <F extends Contract>(name: InstanceName) => ({
 const DeployedNewContracts = {
     BancorArbitrage: deployed<BancorArbitrage>(InstanceName.BancorArbitrage),
     MockExchanges: deployed<MockExchanges>(InstanceName.MockExchanges),
-    MockBalancerVault: deployed<MockBalancerVault>(InstanceName.Mock),
-    ProxyAdmin: deployed<ProxyAdmin>(InstanceName.ProxyAdmin)
+    ProxyAdmin: deployed<ProxyAdmin>(InstanceName.ProxyAdmin),
+    Vault: deployed<Vault>(InstanceName.Vault)
 };
 
 export const DeployedContracts = {
