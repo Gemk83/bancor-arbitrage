@@ -4,57 +4,55 @@ interface EnvOptions {
     TENDERLY_NETWORK_ID?: string;
 }
 
-const { 
-    TENDERLY_NETWORK_ID = '1',
-}: EnvOptions = process.env as any as EnvOptions;
+const { TENDERLY_NETWORK_ID = '1' }: EnvOptions = process.env as any as EnvOptions;
 
 const mainnet = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Mainnet) {
         return {
             [DeploymentNetwork.Mainnet]: address,
             [DeploymentNetwork.Tenderly]: address
-        }
+        };
     }
     return {
         [DeploymentNetwork.Mainnet]: address
-    }
-}
+    };
+};
 
 const base = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Base) {
         return {
             [DeploymentNetwork.Base]: address,
             [DeploymentNetwork.Tenderly]: address
-        }
+        };
     }
     return {
         [DeploymentNetwork.Base]: address
-    }
-}
+    };
+};
 
 const arbitrum = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Arbitrum) {
         return {
             [DeploymentNetwork.Arbitrum]: address,
             [DeploymentNetwork.Tenderly]: address
-        }
+        };
     }
     return {
         [DeploymentNetwork.Arbitrum]: address
-    }
-}
+    };
+};
 
 const sepolia = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Sepolia) {
         return {
             [DeploymentNetwork.Sepolia]: address,
             [DeploymentNetwork.Tenderly]: address
-        }
+        };
     }
     return {
         [DeploymentNetwork.Sepolia]: address
-    }
-}
+    };
+};
 
 const TestNamedAccounts = {
     ethWhale: {
@@ -74,7 +72,7 @@ const TestNamedAccounts = {
     },
     wbtcWhale: {
         ...mainnet('0x6daB3bCbFb336b29d06B9C793AEF7eaA57888922'),
-        ...arbitrum('0x489ee077994B6658eAfA855C308275EAd8097C4A'),
+        ...arbitrum('0x489ee077994B6658eAfA855C308275EAd8097C4A')
     },
     linkWhale: {
         ...mainnet('0xc6bed363b30DF7F35b601a5547fE56cd31Ec63DA'),
@@ -99,7 +97,7 @@ const TokenNamedAccounts = {
     weth: {
         ...mainnet('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'),
         ...base('0x4200000000000000000000000000000000000006'),
-        ...arbitrum('0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'),
+        ...arbitrum('0x82aF49447D8a07e3bd95BD0d56f35241523fBab1')
     },
     usdc: {
         ...mainnet('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
@@ -119,12 +117,12 @@ const TokenNamedAccounts = {
 };
 
 const UniswapNamedAccounts = {
-    uniswapV3Router: { 
+    uniswapV3Router: {
         ...mainnet('0xE592427A0AEce92De3Edee1F18E0157C05861564'),
         ...base('0x2626664c2603336E57B271c5C0b26F421741e481'),
         ...arbitrum('0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45')
     },
-    uniswapV2Router02: { 
+    uniswapV2Router02: {
         ...mainnet('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'),
         ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x0000000000000000000000000000000000000000')
@@ -132,7 +130,7 @@ const UniswapNamedAccounts = {
 };
 
 const SushiSwapNamedAccounts = {
-    sushiSwapRouter: { 
+    sushiSwapRouter: {
         ...mainnet('0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F'),
         ...base('0x6BDED42c6DA8FBf0d2bA55B2fa120C5e0c8D7891'),
         ...arbitrum('0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506')
@@ -140,7 +138,7 @@ const SushiSwapNamedAccounts = {
 };
 
 const BalancerNamedAccounts = {
-    balancerVault: { 
+    balancerVault: {
         ...mainnet('0xBA12222222228d8Ba445958a75a0704d566BF2C8'),
         ...base('0xBA12222222228d8Ba445958a75a0704d566BF2C8'),
         ...arbitrum('0xBA12222222228d8Ba445958a75a0704d566BF2C8')
@@ -148,22 +146,22 @@ const BalancerNamedAccounts = {
 };
 
 const BancorNamedAccounts = {
-    bancorNetworkV2: { 
+    bancorNetworkV2: {
         ...mainnet('0x2F9EC37d6CcFFf1caB21733BdaDEdE11c823cCB0'),
         ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x0000000000000000000000000000000000000000')
-     },
-    bancorNetworkV3: { 
+    },
+    bancorNetworkV3: {
         ...mainnet('0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB'),
         ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x0000000000000000000000000000000000000000')
     },
-    carbonController: { 
+    carbonController: {
         ...mainnet('0xC537e898CD774e2dCBa3B14Ea6f34C93d5eA45e1'),
         ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x0000000000000000000000000000000000000000')
     },
-    carbonPOL: { 
+    carbonPOL: {
         ...mainnet('0xD06146D292F9651C1D7cf54A3162791DFc2bEf46'),
         ...base('0x0000000000000000000000000000000000000000'),
         ...arbitrum('0x0000000000000000000000000000000000000000')
@@ -173,15 +171,15 @@ const BancorNamedAccounts = {
 export const NamedAccounts = {
     deployer: {
         ...mainnet('ledger://0x5bEBA4D3533a963Dedb270a95ae5f7752fA0Fe22'),
-        ...base('ledger://0x5bEBA4D3533a963Dedb270a95ae5f7752fA0Fe22'),
-        ...arbitrum('ledger://0x5bEBA4D3533a963Dedb270a95ae5f7752fA0Fe22'),
+        ...base('0xF5dF989d45736BD2c0a29FfBF70455d518C52653'),
+        ...arbitrum('0xF5dF989d45736BD2c0a29FfBF70455d518C52653'),
         ...sepolia('ledger://0x0f28D58c00F9373C00811E9576eE803B4eF98abe')
     },
-    protocolWallet: { 
+    protocolWallet: {
         ...mainnet('0xba7d1581Db6248DC9177466a328BF457703c8f84'),
-        ...base('0xba7d1581Db6248DC9177466a328BF457703c8f84'),
-        ...arbitrum('0xba7d1581Db6248DC9177466a328BF457703c8f84')
-     },
+        ...base('0x0000000000000000000000000000000000000000'),
+        ...arbitrum('0x0000000000000000000000000000000000000000')
+    },
 
     ...TokenNamedAccounts,
     ...TestNamedAccounts,
