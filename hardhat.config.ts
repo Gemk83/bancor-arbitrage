@@ -39,7 +39,7 @@ const {
     TENDERLY_TEST_PROJECT = '',
     TENDERLY_USERNAME = '',
     TENDERLY_NETWORK_ID = '1',
-    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet,
+    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet
 }: EnvOptions = process.env as any as EnvOptions;
 
 const config: HardhatUserConfig = {
