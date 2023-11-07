@@ -18,6 +18,8 @@ interface EnvOptions {
     ARBITRUM_PROVIDER_URL?: string;
     ETHEREUM_SEPOLIA_PROVIDER_URL?: string;
     ETHERSCAN_API_KEY?: string;
+    BASESCAN_API_KEY?: string;
+    ARBISCAN_API_KEY?: string;
     GAS_PRICE?: number | 'auto';
     TENDERLY_FORK_ID?: string;
     TENDERLY_PROJECT?: string;
@@ -32,14 +34,16 @@ const {
     BASE_PROVIDER_URL = '',
     ARBITRUM_PROVIDER_URL = '',
     ETHEREUM_SEPOLIA_PROVIDER_URL = '',
-    ETHERSCAN_API_KEY,
+    ETHERSCAN_API_KEY = '',
+    BASESCAN_API_KEY = '',
+    ARBISCAN_API_KEY = '',
     GAS_PRICE: gasPrice = 'auto',
     TENDERLY_FORK_ID = '',
     TENDERLY_PROJECT = '',
     TENDERLY_TEST_PROJECT = '',
     TENDERLY_USERNAME = '',
     TENDERLY_NETWORK_ID = '1',
-    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet
+    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet,
 }: EnvOptions = process.env as any as EnvOptions;
 
 const config: HardhatUserConfig = {
@@ -138,14 +142,24 @@ const config: HardhatUserConfig = {
             [DeploymentNetwork.Tenderly]: [`deployments/${DeploymentNetwork.Tenderly}`]
         }
     },
-    verify: {
-        etherscan: {
-            apiKey: ETHERSCAN_API_KEY
-        }
-    },
     etherscan: {
-        apiKey: ETHERSCAN_API_KEY
-    }
+        apiKey: {
+            mainnet: ETHERSCAN_API_KEY,
+            base: BASESCAN_API_KEY,
+            arbitrumOne: ARBISCAN_API_KEY,
+            sepolia: ETHERSCAN_API_KEY
+        },
+        customChains: [
+          {
+            network: "base",
+            chainId: 8453,
+            urls: {
+                apiURL: "https://api.basescan.org",
+                browserURL: "https://basescan.org"
+            }
+          }
+        ]
+      }
 };
 
 export default config;
