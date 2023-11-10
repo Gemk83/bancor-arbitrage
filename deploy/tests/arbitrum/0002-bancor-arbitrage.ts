@@ -24,7 +24,7 @@ describeDeployment(__filename, () => {
 
     it('should deploy and configure the bancor arbitrage contract', async () => {
         expect(await proxyAdmin.getProxyAdmin(bancorArbitrage.address)).to.equal(proxyAdmin.address);
-        expect(await bancorArbitrage.version()).to.equal(9);
+        expect(await bancorArbitrage.version()).to.equal(8);
 
         const arbRewards = await bancorArbitrage.rewards();
         expect(arbRewards.percentagePPM).to.equal(toPPM(10));
