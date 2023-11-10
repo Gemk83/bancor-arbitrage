@@ -211,9 +211,9 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test should revert when deploying BancorArbitrage with an invalid burner wallet
+     * @dev test should revert when deploying BancorArbitrage with an invalid protocol wallet
      */
-    function testShouldRevertWhenInitializingWithInvalidBurnerWallet() public {
+    function testShouldRevertWhenInitializingWithInvalidProtocolWallet() public {
         vm.expectRevert(InvalidAddress.selector);
         new BancorArbitrage(bnt, weth, address(0), platformStruct);
     }
@@ -1157,7 +1157,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test transferring leftover source tokens from the carbon trade to the burner wallet
+     * @dev test transferring leftover source tokens from the carbon trade to the protocol wallet
      * @dev test both user-funded and flashloan arbs
      * @param arbAmount arb amount to test with
      * @param leftoverAmount amount of tokens left over after the carbon trade
@@ -1165,7 +1165,8 @@ contract BancorArbitrageV2ArbsTest is Test {
     function testShouldTransferLeftoverSourceTokensFromCarbonTrade(
         uint256 arbAmount,
         uint256 leftoverAmount,
-        bool userFunded
+        bool userFunded,
+        bool shouldntSweep
     ) public {
         // bound arb amount from 1 to AMOUNT
         arbAmount = bound(arbAmount, 1, AMOUNT);
@@ -1177,21 +1178,30 @@ contract BancorArbitrageV2ArbsTest is Test {
         uint256 sourceTokenAmountForCarbonTrade = arbAmount + 300 ether;
         // encode less tokens for the trade than the source token balance at this point in the arb
         routes[1].customData = getCarbonData(sourceTokenAmountForCarbonTrade - leftoverAmount);
+        // encode whether we shouldn't sweep the tokens
+        routes[1].customInt = shouldntSweep ? routes[1].customInt | 1 : routes[1].customInt;
 
-        // get source token balance in the burner wallet before the trade
+        // get source token balance in the protocol wallet before the trade
         uint256 sourceBalanceBefore = arbToken1.balanceOf(protocolWallet);
 
         // execute arb
         executeArbitrage(flashloans, routes, userFunded);
 
-        // get source token balance in the burner wallet after the trade
+        // get source token balance in the protocol wallet after the trade
         uint256 sourceBalanceAfter = arbToken1.balanceOf(protocolWallet);
         uint256 sourceBalanceTransferred = sourceBalanceAfter - sourceBalanceBefore;
 
-        // assert that the entire leftover amount is transferred to the burner wallet
-        assertEq(leftoverAmount, sourceBalanceTransferred);
-        // assert that no source tokens are left in the arb contract
-        assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
+        if (shouldntSweep) {
+            // assert that nothing has been transferred to the protocol wallet
+            assertEq(sourceBalanceTransferred, 0);
+            // assert that all the leftover source tokens are left in the arb contract
+            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), leftoverAmount);
+        } else {
+            // assert that the entire leftover amount is transferred to the protocol wallet
+            assertEq(leftoverAmount, sourceBalanceTransferred);
+            // assert that no source tokens are left in the arb contract
+            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
+        }
     }
 
     /**

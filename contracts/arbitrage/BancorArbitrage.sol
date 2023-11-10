@@ -657,7 +657,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             );
 
             uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            if (remainingSourceTokens > 0) {
+            // bool shouldntSweep encoded in customInt for Carbon
+            // if bool is true, don't sweep the remaining tokens -
+            // used in case one of the flashloan tokens matches the source token
+            bool shouldntSweep = (customInt & 1) == 1;
+            if (remainingSourceTokens > 0 && !shouldntSweep) {
                 // transfer any remaining source tokens to the protocol wallet
                 // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
                 sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
