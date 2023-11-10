@@ -93,7 +93,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_UNISWAP_V2_FORK = 3;
     uint16 public constant PLATFORM_ID_UNISWAP_V3_FORK = 4;
     uint16 public constant PLATFORM_ID_SUSHISWAP = 5;
-    uint16 public constant PLATFORM_ID_CARBON = 6;
+    uint16 public constant PLATFORM_ID_CARBON_FORK = 6;
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
     uint16 public constant PLATFORM_ID_CURVE = 9;
@@ -626,13 +626,21 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             return;
         }
 
-        if (platformId == PLATFORM_ID_CARBON) {
+        if (platformId == PLATFORM_ID_CARBON_FORK) {
+            ICarbonController controller;
+            // if carbon controller address is not provided, use default address
+            if (customAddress == address(0)) {
+                controller = _carbonController;
+            } else {
+                controller = ICarbonController(customAddress);
+            }
+
             // Carbon accepts 2^128 - 1 max for minTargetAmount
             if (minTargetAmount > type(uint128).max) {
                 revert MinTargetAmountTooHigh();
             }
             // allow the carbon controller to withdraw the source tokens
-            _setPlatformAllowance(sourceToken, address(_carbonController), sourceAmount);
+            _setPlatformAllowance(sourceToken, address(controller), sourceAmount);
 
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
 
@@ -640,7 +648,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             TradeAction[] memory tradeActions = abi.decode(customData, (TradeAction[]));
 
             // perform the trade
-            _carbonController.tradeBySourceAmount{ value: val }(
+            controller.tradeBySourceAmount{ value: val }(
                 sourceToken,
                 targetToken,
                 tradeActions,
