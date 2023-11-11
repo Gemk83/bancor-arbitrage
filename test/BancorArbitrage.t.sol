@@ -1161,12 +1161,14 @@ contract BancorArbitrageV2ArbsTest is Test {
      * @dev test both user-funded and flashloan arbs
      * @param arbAmount arb amount to test with
      * @param leftoverAmount amount of tokens left over after the carbon trade
+     * @param userFunded whether arb is user funded or flashloan
+     * @param shouldSweep whether leftover tokens should be transferred or not
      */
     function testShouldTransferLeftoverSourceTokensFromCarbonTrade(
         uint256 arbAmount,
         uint256 leftoverAmount,
         bool userFunded,
-        bool shouldntSweep
+        bool shouldSweep
     ) public {
         // bound arb amount from 1 to AMOUNT
         arbAmount = bound(arbAmount, 1, AMOUNT);
@@ -1178,8 +1180,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         uint256 sourceTokenAmountForCarbonTrade = arbAmount + 300 ether;
         // encode less tokens for the trade than the source token balance at this point in the arb
         routes[1].customData = getCarbonData(sourceTokenAmountForCarbonTrade - leftoverAmount);
-        // encode whether we shouldn't sweep the tokens
-        routes[1].customInt = shouldntSweep ? routes[1].customInt | 1 : routes[1].customInt;
+        // encode whether we should sweep the tokens
+        routes[1].customInt = shouldSweep ? routes[1].customInt : routes[1].customInt | 1;
 
         // get source token balance in the protocol wallet before the trade
         uint256 sourceBalanceBefore = arbToken1.balanceOf(protocolWallet);
@@ -1191,16 +1193,16 @@ contract BancorArbitrageV2ArbsTest is Test {
         uint256 sourceBalanceAfter = arbToken1.balanceOf(protocolWallet);
         uint256 sourceBalanceTransferred = sourceBalanceAfter - sourceBalanceBefore;
 
-        if (shouldntSweep) {
-            // assert that nothing has been transferred to the protocol wallet
-            assertEq(sourceBalanceTransferred, 0);
-            // assert that all the leftover source tokens are left in the arb contract
-            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), leftoverAmount);
-        } else {
+        if (shouldSweep) {
             // assert that the entire leftover amount is transferred to the protocol wallet
             assertEq(leftoverAmount, sourceBalanceTransferred);
             // assert that no source tokens are left in the arb contract
             assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
+        } else {
+            // assert that nothing has been transferred to the protocol wallet
+            assertEq(sourceBalanceTransferred, 0);
+            // assert that all the leftover source tokens are left in the arb contract
+            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), leftoverAmount);
         }
     }
 
