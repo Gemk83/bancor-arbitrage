@@ -69,7 +69,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         UNISWAP_V2_FORK,
         UNISWAP_V3_FORK,
         SUSHISWAP,
-        CARBON,
+        CARBON_FORK,
         BALANCER,
         CARBON_POL,
         CURVE
@@ -211,9 +211,9 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test should revert when deploying BancorArbitrage with an invalid burner wallet
+     * @dev test should revert when deploying BancorArbitrage with an invalid protocol wallet
      */
-    function testShouldRevertWhenInitializingWithInvalidBurnerWallet() public {
+    function testShouldRevertWhenInitializingWithInvalidProtocolWallet() public {
         vm.expectRevert(InvalidAddress.selector);
         new BancorArbitrage(bnt, weth, address(0), platformStruct);
     }
@@ -993,6 +993,44 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
+     * @dev test proper arbitrage executed parameters - without passing in customAddress for carbon
+     */
+    function testCarbonArbitrageExecutedBackwardCompatibility() public {
+        vm.startPrank(user1);
+        // get flashloan data
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+
+        // test carbon
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCarbon(address(arbToken1), address(arbToken2), AMOUNT, 3);
+        // set custom address to 0 for carbon
+        routes[1].customAddress = address(0);
+
+        (uint16[] memory exchangeIds, address[] memory tokenPath) = buildArbPath(routes);
+
+        address[] memory sourceTokens = new address[](1);
+        uint256[] memory sourceAmounts = new uint256[](1);
+        sourceTokens[0] = address(bnt);
+        sourceAmounts[0] = AMOUNT;
+        (
+            uint256[] memory rewardAmounts,
+            uint256[] memory protocolAmounts
+        ) = calculateExpectedUserRewardsAndProtocolAmounts();
+
+        vm.expectEmit(true, true, true, true);
+        emit ArbitrageExecuted(
+            user1,
+            exchangeIds,
+            tokenPath,
+            sourceTokens,
+            sourceAmounts,
+            protocolAmounts,
+            rewardAmounts
+        );
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+        vm.stopPrank();
+    }
+
+    /**
      * @dev test arbitrage executed event gets emitted
      */
     function testShouldEmitArbitrageExecutedOnSuccessfulUserFundedArb() public {
@@ -1119,15 +1157,18 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test transferring leftover source tokens from the carbon trade to the burner wallet
+     * @dev test transferring leftover source tokens from the carbon trade to the protocol wallet
      * @dev test both user-funded and flashloan arbs
      * @param arbAmount arb amount to test with
      * @param leftoverAmount amount of tokens left over after the carbon trade
+     * @param userFunded whether arb is user funded or flashloan
+     * @param shouldSweep whether leftover tokens should be transferred or not
      */
     function testShouldTransferLeftoverSourceTokensFromCarbonTrade(
         uint256 arbAmount,
         uint256 leftoverAmount,
-        bool userFunded
+        bool userFunded,
+        bool shouldSweep
     ) public {
         // bound arb amount from 1 to AMOUNT
         arbAmount = bound(arbAmount, 1, AMOUNT);
@@ -1135,25 +1176,34 @@ contract BancorArbitrageV2ArbsTest is Test {
         leftoverAmount = bound(leftoverAmount, 1, 300 ether);
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, arbAmount);
         BancorArbitrage.TradeRoute[] memory routes = getRoutes();
-        routes[1].platformId = uint16(PlatformId.CARBON);
+        routes[1].platformId = uint16(PlatformId.CARBON_FORK);
         uint256 sourceTokenAmountForCarbonTrade = arbAmount + 300 ether;
         // encode less tokens for the trade than the source token balance at this point in the arb
         routes[1].customData = getCarbonData(sourceTokenAmountForCarbonTrade - leftoverAmount);
+        // encode whether we should sweep the tokens
+        routes[1].customInt = shouldSweep ? routes[1].customInt : routes[1].customInt | 1;
 
-        // get source token balance in the burner wallet before the trade
+        // get source token balance in the protocol wallet before the trade
         uint256 sourceBalanceBefore = arbToken1.balanceOf(protocolWallet);
 
         // execute arb
         executeArbitrage(flashloans, routes, userFunded);
 
-        // get source token balance in the burner wallet after the trade
+        // get source token balance in the protocol wallet after the trade
         uint256 sourceBalanceAfter = arbToken1.balanceOf(protocolWallet);
         uint256 sourceBalanceTransferred = sourceBalanceAfter - sourceBalanceBefore;
 
-        // assert that the entire leftover amount is transferred to the burner wallet
-        assertEq(leftoverAmount, sourceBalanceTransferred);
-        // assert that no source tokens are left in the arb contract
-        assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
+        if (shouldSweep) {
+            // assert that the entire leftover amount is transferred to the protocol wallet
+            assertEq(leftoverAmount, sourceBalanceTransferred);
+            // assert that no source tokens are left in the arb contract
+            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
+        } else {
+            // assert that nothing has been transferred to the protocol wallet
+            assertEq(sourceBalanceTransferred, 0);
+            // assert that all the leftover source tokens are left in the arb contract
+            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), leftoverAmount);
+        }
     }
 
     /**
@@ -1456,7 +1506,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     function testShouldRevertArbOnCarbonWithInvalidData(bytes memory data) public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
-            uint16(PlatformId.CARBON),
+            uint16(PlatformId.CARBON_FORK),
             address(arbToken1),
             address(arbToken2),
             address(bnt),
@@ -1474,7 +1524,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     function testShouldRevertArbOnCarbonWithLargerThanUint128TargetAmount() public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
         BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
-            uint16(PlatformId.CARBON),
+            uint16(PlatformId.CARBON_FORK),
             address(arbToken1),
             address(arbToken2),
             address(bnt),
@@ -1713,7 +1763,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         routes = new BancorArbitrage.TradeRoute[](3);
 
         uint256 customFee = 0;
-        address customAddress = token2;
+        // custom address should be the exchange address for all uni v2/v3 and carbon forks
+        address customAddress = address(exchanges);
         // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
         if (platformId == uint16(PlatformId.UNISWAP_V3_FORK)) {
             uint16[3] memory fees = [100, 500, 3000];
@@ -1729,7 +1780,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         bytes memory data = "";
         // add custom data for carbon
-        if (platformId == uint16(PlatformId.CARBON)) {
+        if (platformId == uint16(PlatformId.CARBON_FORK)) {
             TradeAction[] memory tradeActions = new TradeAction[](1);
             tradeActions[0] = TradeAction({ strategyId: 0, amount: uint128(AMOUNT + 300 ether) });
             data = abi.encode(tradeActions);
@@ -1791,7 +1842,7 @@ contract BancorArbitrageV2ArbsTest is Test {
         routes = new BancorArbitrage.TradeRoute[](routeLength);
 
         uint256 customFee = 0;
-        // custom address should be the exchange for all uni v2/v3 forks
+        // custom address should be the exchange for all uni v2/v3 and carbon forks
         address customAddress = address(exchanges);
         // add custom fee bps for pancake / uni v3 - 100, 500 or 3000
         if (platformId == uint16(PlatformId.UNISWAP_V3_FORK)) {
@@ -1851,6 +1902,8 @@ contract BancorArbitrageV2ArbsTest is Test {
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](3);
 
+        // custom address should be the exchange for all carbon forks
+        address customAddress = address(exchanges);
         // generate from 1 to 11 actions
         // each action will trade `amount / tradeActionCount`
         tradeActionCount = bound(tradeActionCount, 1, 11);
@@ -1880,13 +1933,13 @@ contract BancorArbitrageV2ArbsTest is Test {
         });
 
         routes[1] = BancorArbitrage.TradeRoute({
-            platformId: uint16(PlatformId.CARBON),
+            platformId: uint16(PlatformId.CARBON_FORK),
             sourceToken: Token(token1),
             targetToken: Token(token2),
             sourceAmount: arbAmount + hopGain,
             minTargetAmount: 1,
             deadline: DEADLINE,
-            customAddress: token2,
+            customAddress: customAddress,
             customInt: 0,
             customData: customData
         });
