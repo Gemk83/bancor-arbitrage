@@ -122,7 +122,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
     "PLATFORM_ID_BALANCER()": FunctionFragment;
     "PLATFORM_ID_BANCOR_V2()": FunctionFragment;
     "PLATFORM_ID_BANCOR_V3()": FunctionFragment;
-    "PLATFORM_ID_CARBON()": FunctionFragment;
+    "PLATFORM_ID_CARBON_FORK()": FunctionFragment;
     "PLATFORM_ID_CARBON_POL()": FunctionFragment;
     "PLATFORM_ID_CURVE()": FunctionFragment;
     "PLATFORM_ID_SUSHISWAP()": FunctionFragment;
@@ -154,7 +154,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
       | "PLATFORM_ID_BALANCER"
       | "PLATFORM_ID_BANCOR_V2"
       | "PLATFORM_ID_BANCOR_V3"
-      | "PLATFORM_ID_CARBON"
+      | "PLATFORM_ID_CARBON_FORK"
       | "PLATFORM_ID_CARBON_POL"
       | "PLATFORM_ID_CURVE"
       | "PLATFORM_ID_SUSHISWAP"
@@ -197,7 +197,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "PLATFORM_ID_CARBON",
+    functionFragment: "PLATFORM_ID_CARBON_FORK",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -304,7 +304,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "PLATFORM_ID_CARBON",
+    functionFragment: "PLATFORM_ID_CARBON_FORK",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -499,7 +499,7 @@ export interface BancorArbitrage extends BaseContract {
 
     PLATFORM_ID_BANCOR_V3(overrides?: CallOverrides): Promise<[number]>;
 
-    PLATFORM_ID_CARBON(overrides?: CallOverrides): Promise<[number]>;
+    PLATFORM_ID_CARBON_FORK(overrides?: CallOverrides): Promise<[number]>;
 
     PLATFORM_ID_CARBON_POL(overrides?: CallOverrides): Promise<[number]>;
 
@@ -614,7 +614,7 @@ export interface BancorArbitrage extends BaseContract {
 
   PLATFORM_ID_BANCOR_V3(overrides?: CallOverrides): Promise<number>;
 
-  PLATFORM_ID_CARBON(overrides?: CallOverrides): Promise<number>;
+  PLATFORM_ID_CARBON_FORK(overrides?: CallOverrides): Promise<number>;
 
   PLATFORM_ID_CARBON_POL(overrides?: CallOverrides): Promise<number>;
 
@@ -729,7 +729,7 @@ export interface BancorArbitrage extends BaseContract {
 
     PLATFORM_ID_BANCOR_V3(overrides?: CallOverrides): Promise<number>;
 
-    PLATFORM_ID_CARBON(overrides?: CallOverrides): Promise<number>;
+    PLATFORM_ID_CARBON_FORK(overrides?: CallOverrides): Promise<number>;
 
     PLATFORM_ID_CARBON_POL(overrides?: CallOverrides): Promise<number>;
 
@@ -910,7 +910,7 @@ export interface BancorArbitrage extends BaseContract {
 
     PLATFORM_ID_BANCOR_V3(overrides?: CallOverrides): Promise<BigNumber>;
 
-    PLATFORM_ID_CARBON(overrides?: CallOverrides): Promise<BigNumber>;
+    PLATFORM_ID_CARBON_FORK(overrides?: CallOverrides): Promise<BigNumber>;
 
     PLATFORM_ID_CARBON_POL(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -1033,7 +1033,7 @@ export interface BancorArbitrage extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    PLATFORM_ID_CARBON(
+    PLATFORM_ID_CARBON_FORK(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

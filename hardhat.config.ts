@@ -150,16 +150,16 @@ const config: HardhatUserConfig = {
             sepolia: ETHERSCAN_API_KEY
         },
         customChains: [
-          {
-            network: "base",
-            chainId: 8453,
-            urls: {
-                apiURL: "https://api.basescan.org",
-                browserURL: "https://basescan.org"
+            {
+                network: 'base',
+                chainId: 8453,
+                urls: {
+                    apiURL: 'https://api.basescan.org',
+                    browserURL: 'https://basescan.org'
+                }
             }
-          }
         ]
-      }
+    }
 };
 
 export default config;
