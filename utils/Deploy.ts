@@ -415,19 +415,6 @@ export const upgradeProxy = async (options: UpgradeProxyOptions, initImpl = fals
         log: true
     });
 
-    if (initImpl) {
-        if (!res.implementation) {
-            throw new Error(`Implementation address for ${contractName} missing`);
-        }
-        await initializeImplementation({
-            name,
-            address: res.implementation,
-            args: initArgs,
-            from
-        });
-        Logger.log(`  initialized proxy implementation`);
-    }
-
     const newVersion = await (deployed as IVersioned).version();
 
     Logger.log(`  upgraded proxy ${contractName} V${prevVersion} to V${newVersion}`);
