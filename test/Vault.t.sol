@@ -41,7 +41,7 @@ contract VaultTest is Test {
     function setUp() public virtual {
         utils = new Utilities();
         // create 4 users
-        users = utils.createUsers(4);
+        users = utils.createUsers();
         admin = users[0];
         user1 = users[1];
         user2 = users[2];

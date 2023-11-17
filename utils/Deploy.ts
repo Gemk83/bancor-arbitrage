@@ -1,5 +1,12 @@
 import { ArtifactData } from '../components/ContractBuilder';
-import { BancorArbitrage, IVersioned, MockExchanges, ProxyAdmin, Vault } from '../components/Contracts';
+import {
+    BancorArbitrage,
+    IVersioned,
+    MockBalancerVault,
+    MockExchanges,
+    ProxyAdmin,
+    Vault
+} from '../components/Contracts';
 import Logger from './Logger';
 import { DeploymentNetwork, ZERO_BYTES, PROXY_CONTRACT, INITIALIZE, POST_UPGRADE, NetworkId } from './Constants';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
@@ -115,6 +122,7 @@ const deployed = <F extends Contract>(name: InstanceName) => ({
 const DeployedNewContracts = {
     BancorArbitrage: deployed<BancorArbitrage>(InstanceName.BancorArbitrage),
     MockExchanges: deployed<MockExchanges>(InstanceName.MockExchanges),
+    MockBalancerVault: deployed<MockBalancerVault>(InstanceName.MockBalancerVault),
     ProxyAdmin: deployed<ProxyAdmin>(InstanceName.ProxyAdmin),
     Vault: deployed<Vault>(InstanceName.Vault)
 };
@@ -368,7 +376,7 @@ interface UpgradeProxyOptions extends DeployOptions {
     postUpgradeArgs?: TypedParam[];
 }
 
-export const upgradeProxy = async (options: UpgradeProxyOptions, initImpl = false, initArgs?: any[]) => {
+export const upgradeProxy = async (options: UpgradeProxyOptions) => {
     const { name, contract, from, value, args, postUpgradeArgs, contractArtifactData } = options;
     const contractName = contract ?? name;
 

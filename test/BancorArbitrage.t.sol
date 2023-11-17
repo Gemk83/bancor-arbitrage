@@ -126,7 +126,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     function setUp() public virtual {
         utils = new Utilities();
         // create 4 users
-        users = utils.createUsers(4);
+        users = utils.createUsers();
         admin = users[0];
         user1 = users[1];
         protocolWallet = users[3];
@@ -232,7 +232,7 @@ contract BancorArbitrageV2ArbsTest is Test {
      */
     function testShouldBeInitialized() public {
         uint256 version = bancorArbitrage.version();
-        assertEq(version, 9);
+        assertEq(version, 10);
     }
 
     /// --- Reward distribution and protocol transfer tests --- ///
@@ -805,6 +805,39 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
     }
 
+    /**
+     * @dev test trade approvals for erc-20 tokens for the carbon pol (only BNT -> ETH)
+     * @dev should approve max amount for trading
+     */
+    function testShouldApproveERC20TokensForCarbonPOL(bool userFunded) public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(arbToken1, AMOUNT);
+        // bound to valid exchange ids
+        uint16 platformId = uint16(PlatformId.CARBON_POL);
+        uint256 approveAmount = type(uint256).max;
+
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            platformId,
+            address(bnt),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(arbToken1),
+            AMOUNT,
+            0
+        );
+        vm.startPrank(user1);
+        // approve token if user-funded arb
+        if (userFunded) {
+            Token(address(arbToken1)).safeApprove(address(bancorArbitrage), type(uint256).max);
+        }
+        uint256 allowance = bnt.allowance(address(bancorArbitrage), address(exchanges));
+        if (allowance == 0) {
+            // expect bnt to emit the approval event
+            vm.expectEmit(true, true, true, true, address(bnt));
+            emit Approval(address(bancorArbitrage), address(exchanges), approveAmount);
+        }
+        vm.stopPrank();
+        executeArbitrageNoApproval(flashloans, routes, userFunded);
+    }
+
     /// --- Arbitrage tests --- ///
 
     /**
@@ -1135,6 +1168,26 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         setCurveTokens(routes);
         // trade
+        executeArbitrage(flashloans, routes, userFunded);
+    }
+
+    /**
+     * @dev fuzz test arbs on carbon pol - from BNT to ETH
+     * @dev use different arb amounts
+     * @dev test both user-funded and flashloan arbs
+     */
+    function testArbitrageOnCarbonPOL(uint256 arbAmount, bool userFunded) public {
+        // bound arb amount from 1 to AMOUNT
+        arbAmount = bound(arbAmount, 1, AMOUNT);
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(arbToken1, arbAmount);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(bnt),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(arbToken1),
+            arbAmount,
+            0
+        );
         executeArbitrage(flashloans, routes, userFunded);
     }
 
@@ -1557,41 +1610,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test that arb attempt on carbon pol with invalid trade data should revert
-     */
-    function testShouldRevertArbOnCarbonPOLWithNonETHAsSourceToken() public {
-        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
-            uint16(PlatformId.CARBON_POL),
-            address(arbToken1),
-            address(arbToken2),
-            address(bnt),
-            AMOUNT,
-            500
-        );
-        vm.expectRevert(BancorArbitrage.SourceTokenIsNotETH.selector);
-        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
-    }
-
-    /**
-     * @dev test that arb attempt on carbon pol with invalid trade data should revert
-     */
-    function testShouldRevertArbOnCarbonPOLWithETHAsTargetToken() public {
-        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
-            uint16(PlatformId.CARBON_POL),
-            address(TokenLibrary.NATIVE_TOKEN),
-            address(TokenLibrary.NATIVE_TOKEN),
-            address(bnt),
-            AMOUNT,
-            500
-        );
-        vm.expectRevert(BancorArbitrage.TargetTokenIsETH.selector);
-        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
-    }
-
-    /**
-     * @dev test that arb attempt on carbon if min target amount is not reached
+     * @dev test that arb attempt on carbon pol if min target amount is not reached
      */
     function testShouldRevertArbOnCarbonPOLIfMinTargetAmountIsNotReached() public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
@@ -1605,6 +1624,40 @@ contract BancorArbitrageV2ArbsTest is Test {
         );
         routes[1].minTargetAmount = 2 ** 128;
         vm.expectRevert(BancorArbitrage.MinTargetAmountNotReached.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on carbon pol reverts if the source token isn't ETH or BNT
+     */
+    function testShouldRevertArbOnCarbonPOLIfSourceTokenIsntETHOrBNT() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(arbToken1), // carbon pol source token
+            address(arbToken2), // carbon pol target token
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.InvalidCarbonPOLTrade.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on carbon pol reverts if the source token is BNT and target isn't ETH
+     */
+    function testShouldRevertArbOnCarbonPOLIfSourceTokenIsBNTAndTargetIsntETH() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(arbToken1, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CARBON_POL),
+            address(bnt), // carbon pol source token
+            address(arbToken2), // carbon pol target token
+            address(arbToken1),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.InvalidCarbonPOLTrade.selector);
         bancorArbitrage.flashloanAndArbV2(flashloans, routes);
     }
 

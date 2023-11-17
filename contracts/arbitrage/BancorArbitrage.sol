@@ -45,8 +45,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error InvalidSourceToken();
     error InvalidETHAmountSent();
     error SourceAmountTooHigh();
-    error SourceTokenIsNotETH();
-    error TargetTokenIsETH();
+    error InvalidCarbonPOLTrade();
     error InvalidCurvePool();
 
     // trade args v2
@@ -227,7 +226,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 9;
+        return 10;
     }
 
     /**
@@ -631,7 +630,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // if carbon controller address is not provided, use default address
             // TODO: temporarily disabled custom address
             //if (customAddress == address(0)) {
-                controller = _carbonController;
+            controller = _carbonController;
             //} else {
             //    controller = ICarbonController(customAddress);
             //}
@@ -706,17 +705,20 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 revert SourceAmountTooHigh();
             }
 
-            // Carbon POL accepts only ETH for sourceToken
-            if (!sourceToken.isNative()) {
-                revert SourceTokenIsNotETH();
+            // verify source token is ETH or BNT
+            if (!sourceToken.isNative() && !sourceToken.isEqual(_bnt)) {
+                revert InvalidCarbonPOLTrade();
             }
 
-            // Carbon POL accepts only non-ETH for targetToken
-            if (targetToken.isNative()) {
-                revert TargetTokenIsETH();
+            // if source token is BNT, we can only trade it for ETH
+            if (sourceToken.isEqual(_bnt) && !targetToken.isNative()) {
+                revert InvalidCarbonPOLTrade();
             }
 
-            // get the expected return
+            // allow carbon pol to withdraw the source tokens
+            _setPlatformAllowance(sourceToken, address(_carbonPOL), sourceAmount);
+
+            // get the target amount for the trade
             uint128 targetAmount = _carbonPOL.expectedTradeReturn(targetToken, uint128(sourceAmount));
 
             // verify the expected return
@@ -724,8 +726,10 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 revert MinTargetAmountNotReached();
             }
 
+            uint256 val = sourceToken.isNative() ? sourceAmount : 0;
+
             // perform the trade
-            _carbonPOL.trade{ value: sourceAmount }(targetToken, targetAmount);
+            _carbonPOL.trade{ value: val }(targetToken, targetAmount);
 
             return;
         }
