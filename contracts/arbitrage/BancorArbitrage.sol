@@ -596,20 +596,13 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 router = ISwapRouter(customAddress);
             }
 
-            address tokenIn = sourceToken.isNative() ? address(_weth) : address(sourceToken);
-            address tokenOut = targetToken.isNative() ? address(_weth) : address(targetToken);
-
-            if (tokenIn == address(_weth)) {
-                IWETH(address(_weth)).deposit{ value: sourceAmount }();
-            }
-
             // allow the router to withdraw the source tokens
-            _setPlatformAllowance(Token(tokenIn), address(router), sourceAmount);
+            _setPlatformAllowance(sourceToken, address(router), sourceAmount);
 
             // build the params
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
+                tokenIn: address(sourceToken),
+                tokenOut: address(targetToken),
                 fee: uint24(customInt), // fee
                 recipient: address(this),
                 deadline: deadline,
@@ -620,10 +613,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
 
             // perform the trade
             router.exactInputSingle(params);
-
-            if (tokenOut == address(_weth)) {
-                IWETH(address(_weth)).withdraw(_weth.balanceOf(address(this)));
-            }
 
             return;
         }
