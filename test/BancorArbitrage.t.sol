@@ -72,7 +72,8 @@ contract BancorArbitrageV2ArbsTest is Test {
         CARBON_FORK,
         BALANCER,
         CARBON_POL,
-        CURVE
+        CURVE,
+        WETH
     }
 
     BancorArbitrage.Rewards private arbitrageRewardsDefaults =
@@ -121,6 +122,16 @@ contract BancorArbitrageV2ArbsTest is Test {
      * a call to {approve}. `value` is the new allowance.
      */
     event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    /**
+     * @dev WETH deposit event
+     */
+    event Deposit(address indexed dst, uint256 wad);
+
+    /**
+     * @dev WETH withdrawal event
+     */
+    event Withdrawal(address indexed src, uint256 wad);
 
     /// @dev function to set up state before tests
     function setUp() public virtual {
@@ -232,7 +243,7 @@ contract BancorArbitrageV2ArbsTest is Test {
      */
     function testShouldBeInitialized() public {
         uint256 version = bancorArbitrage.version();
-        assertEq(version, 9);
+        assertEq(version, 10);
     }
 
     /// --- Reward distribution and protocol transfer tests --- ///
@@ -755,7 +766,7 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
-     * @dev test trade approvals for erc-20 tokens for exchanges
+     * @dev test trade approvals for erc-20 tokens for exchanges (without WETH exchange)
      * @dev should approve max amount for trading on each first swap for token and exchange
      */
     function testShouldApproveERC20TokensForEachExchange(uint16 platformId, bool userFunded) public {
@@ -1446,6 +1457,103 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
+     * @dev test that arbing on the weth platform should wrap or unwrap the source amount of the native token
+     */
+    function testTradingOnWethPlatformShouldWrapOrUnwrapTheNativeToken(bool userFunded, bool isNativeToken) public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        Token sourceToken = isNativeToken ? TokenLibrary.NATIVE_TOKEN : Token(address(weth));
+        Token targetToken = isNativeToken ? Token(address(weth)) : TokenLibrary.NATIVE_TOKEN;
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.WETH),
+            address(sourceToken),
+            address(targetToken),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        // set third hop to AMOUNT + 200 target tokens as input
+        // after the first hop, we have AMOUNT + 300 sourceToken (native token or weth) tokens available
+        // this is because when wrapping / unwrapping ETH the token amount is the same
+        routes[2].sourceAmount = AMOUNT + 200e18;
+        vm.startPrank(user1);
+        if (userFunded) {
+            Token(address(bnt)).safeApprove(address(bancorArbitrage), AMOUNT);
+        }
+        vm.stopPrank();
+        uint256 userBalanceBefore = bnt.balanceOf(user1);
+        uint256 balanceBefore = targetToken.balanceOf(address(bancorArbitrage));
+        // make arb with AMOUNT
+        executeArbitrageNoApproval(flashloans, routes, userFunded);
+        // get user and arb contract balances
+        uint256 userBalanceAfter = bnt.balanceOf(user1);
+        uint256 balanceAfter = targetToken.balanceOf(address(bancorArbitrage));
+        uint256 userGain = userBalanceAfter - userBalanceBefore;
+        // calculate expected user gain
+        uint256 hopGain = exchanges.outputAmount();
+        uint256 totalRewards = (routes.length - 1) * hopGain - 100e18; // no hop gain from wrapping / unwrapping
+        BancorArbitrage.Rewards memory rewards = bancorArbitrage.rewards();
+        uint256 expectedUserGain = (totalRewards * rewards.percentagePPM) / PPM_RESOLUTION;
+        // assert that 100 targetTokens (Native token or weth) tokens remain in the contract's balance
+        assertEq(balanceAfter, balanceBefore + 100e18);
+        // assert that user will gain exactly the expected amount
+        assertEq(userGain, expectedUserGain);
+    }
+
+    /**
+     * @dev test arbing on weth platform emits the deposit event when trading ETH -> wETH
+     */
+    function testTradingOnWethPlatformEmitsDepositEvent() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+
+        // if source token is native and target is weth, trading on the WETH platform is equal to a weth deposit
+        Token sourceToken = TokenLibrary.NATIVE_TOKEN;
+        Token targetToken = Token(address(weth));
+
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.WETH),
+            address(sourceToken),
+            address(targetToken),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+
+        uint256 hopGain = exchanges.outputAmount();
+        uint256 expectedDepositAmount = AMOUNT + hopGain;
+
+        vm.expectEmit();
+        emit Deposit(address(bancorArbitrage), expectedDepositAmount);
+        executeArbitrage(flashloans, routes, false);
+    }
+
+    /**
+     * @dev test arbing on weth platform emits the withdrawal event when trading wETH -> ETH
+     */
+    function testTradingOnWethPlatformEmitsWithdrawalEvent() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+
+        // if source token is weth and target is NATIVE TOKEN, trading on the WETH platform is equal to a weth withdrawal
+        Token sourceToken = Token(address(weth));
+        Token targetToken = TokenLibrary.NATIVE_TOKEN;
+
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.WETH),
+            address(sourceToken),
+            address(targetToken),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+
+        uint256 hopGain = exchanges.outputAmount();
+        uint256 expectedDepositAmount = AMOUNT + hopGain;
+
+        vm.expectEmit();
+        emit Withdrawal(address(bancorArbitrage), expectedDepositAmount);
+        executeArbitrage(flashloans, routes, false);
+    }
+
+    /**
      * @dev test setting custom source token which doesn't match the previous target token
      */
     function testShouldRevertArbIfNoTokenBalanceInGivenHop() public {
@@ -1605,6 +1713,61 @@ contract BancorArbitrageV2ArbsTest is Test {
         );
         routes[1].minTargetAmount = 2 ** 128;
         vm.expectRevert(BancorArbitrage.MinTargetAmountNotReached.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on curve with invalid pool address should revert
+     */
+    function testShouldRevertArbOnCurveIfNoPoolAddressIsPassedIn() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.CURVE),
+            address(arbToken1),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        // set curve tokens, pool address and token indices
+        setCurveTokens(routes);
+        // set custom address to 0
+        routes[1].customAddress = address(0);
+        vm.expectRevert(BancorArbitrage.InvalidCurvePool.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on WETH with invalid trade data should revert
+     */
+    function testShouldRevertArbOnPlaftormWETHWithNonETHorWETHAsSourceToken() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.WETH),
+            address(arbToken1),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.InvalidWethTrade.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
+     * @dev test that arb attempt on WETH with invalid trade data should revert
+     */
+    function testShouldRevertArbOnPlaftormWETHWithNonETHorWETHAsTargetToken() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+            uint16(PlatformId.WETH),
+            address(TokenLibrary.NATIVE_TOKEN),
+            address(arbToken2),
+            address(bnt),
+            AMOUNT,
+            500
+        );
+        vm.expectRevert(BancorArbitrage.InvalidWethTrade.selector);
         bancorArbitrage.flashloanAndArbV2(flashloans, routes);
     }
 

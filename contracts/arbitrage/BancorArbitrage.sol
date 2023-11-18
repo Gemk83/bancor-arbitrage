@@ -48,6 +48,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
     error InvalidCurvePool();
+    error InvalidWethTrade();
 
     // trade args v2
     struct TradeRoute {
@@ -97,6 +98,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
     uint16 public constant PLATFORM_ID_CURVE = 9;
+    uint16 public constant PLATFORM_ID_WETH = 10;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -227,7 +229,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 9;
+        return 10;
     }
 
     /**
@@ -631,7 +633,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // if carbon controller address is not provided, use default address
             // TODO: temporarily disabled custom address
             //if (customAddress == address(0)) {
-                controller = _carbonController;
+            controller = _carbonController;
             //} else {
             //    controller = ICarbonController(customAddress);
             //}
@@ -746,6 +748,19 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 sourceAmount,
                 minTargetAmount
             );
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_WETH) {
+            // Platform WETH accepts only wETH -> ETH and ETH -> wETH trades
+            if (sourceToken.isNative() && targetToken.isEqual(_weth)) {
+                IWETH(address(_weth)).deposit{ value: sourceAmount }();
+            } else if (sourceToken.isEqual(_weth) && targetToken.isNative()) {
+                IWETH(address(_weth)).withdraw(sourceAmount);
+            } else {
+                revert InvalidWethTrade();
+            }
 
             return;
         }

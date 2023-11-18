@@ -368,7 +368,7 @@ interface UpgradeProxyOptions extends DeployOptions {
     postUpgradeArgs?: TypedParam[];
 }
 
-export const upgradeProxy = async (options: UpgradeProxyOptions, initImpl = false, initArgs?: any[]) => {
+export const upgradeProxy = async (options: UpgradeProxyOptions) => {
     const { name, contract, from, value, args, postUpgradeArgs, contractArtifactData } = options;
     const contractName = contract ?? name;
 
