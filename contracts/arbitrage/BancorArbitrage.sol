@@ -631,12 +631,11 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         if (platformId == PLATFORM_ID_CARBON_FORK) {
             ICarbonController controller;
             // if carbon controller address is not provided, use default address
-            // TODO: temporarily disabled custom address
-            //if (customAddress == address(0)) {
-            controller = _carbonController;
-            //} else {
-            //    controller = ICarbonController(customAddress);
-            //}
+            if (customAddress == address(0)) {
+                controller = _carbonController;
+            } else {
+                controller = ICarbonController(customAddress);
+            }
 
             // Carbon accepts 2^128 - 1 max for minTargetAmount
             if (minTargetAmount > type(uint128).max) {
