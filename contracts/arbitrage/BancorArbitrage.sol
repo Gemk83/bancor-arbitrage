@@ -48,6 +48,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     error SourceTokenIsNotETH();
     error TargetTokenIsETH();
     error InvalidCurvePool();
+    error InvalidWethTrade();
 
     // trade args v2
     struct TradeRoute {
@@ -97,6 +98,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     uint16 public constant PLATFORM_ID_BALANCER = 7;
     uint16 public constant PLATFORM_ID_CARBON_POL = 8;
     uint16 public constant PLATFORM_ID_CURVE = 9;
+    uint16 public constant PLATFORM_ID_WETH = 10;
 
     // minimum number of trade routes supported
     uint256 private constant MIN_ROUTE_LENGTH = 2;
@@ -227,7 +229,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 9;
+        return 10;
     }
 
     /**
@@ -594,20 +596,13 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 router = ISwapRouter(customAddress);
             }
 
-            address tokenIn = sourceToken.isNative() ? address(_weth) : address(sourceToken);
-            address tokenOut = targetToken.isNative() ? address(_weth) : address(targetToken);
-
-            if (tokenIn == address(_weth)) {
-                IWETH(address(_weth)).deposit{ value: sourceAmount }();
-            }
-
             // allow the router to withdraw the source tokens
-            _setPlatformAllowance(Token(tokenIn), address(router), sourceAmount);
+            _setPlatformAllowance(sourceToken, address(router), sourceAmount);
 
             // build the params
             ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
+                tokenIn: address(sourceToken),
+                tokenOut: address(targetToken),
                 fee: uint24(customInt), // fee
                 recipient: address(this),
                 deadline: deadline,
@@ -619,22 +614,17 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // perform the trade
             router.exactInputSingle(params);
 
-            if (tokenOut == address(_weth)) {
-                IWETH(address(_weth)).withdraw(_weth.balanceOf(address(this)));
-            }
-
             return;
         }
 
         if (platformId == PLATFORM_ID_CARBON_FORK) {
             ICarbonController controller;
             // if carbon controller address is not provided, use default address
-            // TODO: temporarily disabled custom address
-            //if (customAddress == address(0)) {
+            if (customAddress == address(0)) {
                 controller = _carbonController;
-            //} else {
-            //    controller = ICarbonController(customAddress);
-            //}
+            } else {
+                controller = ICarbonController(customAddress);
+            }
 
             // Carbon accepts 2^128 - 1 max for minTargetAmount
             if (minTargetAmount > type(uint128).max) {
@@ -746,6 +736,19 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 sourceAmount,
                 minTargetAmount
             );
+
+            return;
+        }
+
+        if (platformId == PLATFORM_ID_WETH) {
+            // Platform WETH accepts only wETH -> ETH and ETH -> wETH trades
+            if (sourceToken.isNative() && targetToken.isEqual(_weth)) {
+                IWETH(address(_weth)).deposit{ value: sourceAmount }();
+            } else if (sourceToken.isEqual(_weth) && targetToken.isNative()) {
+                IWETH(address(_weth)).withdraw(sourceAmount);
+            } else {
+                revert InvalidWethTrade();
+            }
 
             return;
         }
