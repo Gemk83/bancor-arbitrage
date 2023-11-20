@@ -204,11 +204,22 @@ contract MockExchanges {
     /**
      * Carbon POL trade return
      */
-    function expectedTradeReturn(Token /* token */, uint128 ethAmount) external view returns (uint128 tokenAmount) {
+    function expectedTradeReturn(Token /* token */, uint128 sourceAmount) external view returns (uint128 targetAmount) {
         if (_profit) {
-            tokenAmount = (ethAmount + _outputAmount).toUint128();
+            targetAmount = (sourceAmount + _outputAmount).toUint128();
         } else {
-            tokenAmount = (ethAmount - _outputAmount).toUint128();
+            targetAmount = (sourceAmount - _outputAmount).toUint128();
+        }
+    }
+
+    /**
+     * Carbon POL trade input
+     */
+    function expectedTradeInput(Token /* token */, uint128 targetAmount) public view returns (uint128 sourceAmount) {
+        if (_profit) {
+            sourceAmount = (targetAmount - _outputAmount).toUint128();
+        } else {
+            sourceAmount = (targetAmount + _outputAmount).toUint128();
         }
     }
 
@@ -216,7 +227,12 @@ contract MockExchanges {
      * Carbon POL trade
      */
     function trade(Token token, uint128 amount) external payable returns (uint128) {
-        return mockSwap(TokenLibrary.NATIVE_TOKEN, token, amount, msg.sender, block.timestamp, 0).toUint128();
+        // when trading for the native token, source token is always BNT for CarbonPOL (as of the latest update)
+        Token sourceToken = token.isNative() ? Token(_bnt) : TokenLibrary.NATIVE_TOKEN;
+        // get source amount
+        uint128 sourceAmount = expectedTradeInput(token, amount);
+        // trade
+        return mockSwap(sourceToken, token, sourceAmount, msg.sender, block.timestamp, 0).toUint128();
     }
 
     function setCurveToken(int128 index, Token token) external {
