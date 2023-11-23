@@ -12,7 +12,8 @@ export enum DeploymentNetwork {
     Arbitrum = 'arbitrum',
     Sepolia = 'sepolia',
     Hardhat = 'hardhat',
-    Tenderly = 'tenderly'
+    Tenderly = 'tenderly',
+    TenderlyTestnet = 'tenderly_testnet'
 }
 
 export enum NetworkId {

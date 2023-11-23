@@ -16,22 +16,22 @@ import path from 'path';
 
 interface EnvOptions {
     DEV_ADDRESSES: string;
-    FORK_NAME: string;
-    FORK_RESEARCH: boolean;
+    TESTNET_NAME: string;
     TENDERLY_PROJECT: string;
     TENDERLY_USERNAME: string;
-    TENDERLY_FORK_ID: string;
+    TENDERLY_TESTNET_ID: string;
     TENDERLY_FORK_NETWORK_NAME: string;
+    TENDERLY_TESTNET_PROVIDER_URL?: string;
 }
 
 const {
     DEV_ADDRESSES,
-    FORK_NAME,
-    FORK_RESEARCH: isResearch,
+    TESTNET_NAME,
     TENDERLY_PROJECT,
     TENDERLY_USERNAME,
-    TENDERLY_FORK_ID: forkId,
-    TENDERLY_FORK_NETWORK_NAME = 'mainnet'
+    TENDERLY_TESTNET_ID: testnetId = '',
+    TENDERLY_FORK_NETWORK_NAME = 'mainnet',
+    TENDERLY_TESTNET_PROVIDER_URL: testnetRpcUrl
 }: EnvOptions = process.env as any as EnvOptions;
 
 interface FundingRequest {
@@ -136,8 +136,8 @@ const runDeployments = async () => {
 const archiveArtifacts = async () => {
     const zip = new AdmZip();
 
-    const srcDir = path.resolve(path.join(__dirname, './tenderly'));
-    const dest = path.resolve(path.join(__dirname, `../fork-${forkId}.zip`));
+    const srcDir = path.resolve(path.join(__dirname, './tenderly_testnet'));
+    const dest = path.resolve(path.join(__dirname, `../testnet-${testnetId}.zip`));
 
     zip.addLocalFolder(srcDir);
     zip.writeZip(dest);
@@ -147,7 +147,7 @@ const archiveArtifacts = async () => {
 };
 
 const main = async () => {
-    if (!isTenderlyFork() && !isTenderlyTestnet()) {
+    if (!isTenderlyTestnet()) {
         throw new Error('Invalid network');
     }
 
@@ -161,14 +161,14 @@ const main = async () => {
 
     const networkName = capitalize(TENDERLY_FORK_NETWORK_NAME);
 
-    const description = `${networkName} ${FORK_NAME ? FORK_NAME : ""} Fork`;
+    const description = `${networkName} ${TESTNET_NAME ? TESTNET_NAME : ""} Tenderly Testnet`;
 
     Logger.log('********************************************************************************');
     Logger.log();
     Logger.log(description);
     Logger.log('‾'.repeat(description.length));
-    Logger.log(`   RPC: https://rpc.tenderly.co/fork/${forkId}`);
-    Logger.log(`   Dashboard: https://dashboard.tenderly.co/${TENDERLY_USERNAME}/${TENDERLY_PROJECT}/fork/${forkId}`);
+    Logger.log(`   RPC: ${testnetRpcUrl}`);
+    Logger.log(`   Dashboard: https://dashboard.tenderly.co/${TENDERLY_USERNAME}/${TENDERLY_PROJECT}/testnet/${testnetId}`);
     Logger.log();
     Logger.log('********************************************************************************');
 };

@@ -30,14 +30,11 @@ const func: DeployFunction = async ({ getNamedAccounts }: HardhatRuntimeEnvironm
     };
 
     if (isMainnet()) {
-        await upgradeProxy(
-            {
-                name: InstanceName.BancorArbitrage,
-                from: deployer,
-                args: [bnt, protocolWallet, platforms]
-            },
-            true
-        );
+        await upgradeProxy({
+            name: InstanceName.BancorArbitrage,
+            from: deployer,
+            args: [bnt, protocolWallet, platforms]
+        });
     } else {
         const mockExchanges = await DeployedContracts.MockExchanges.deployed();
         const mockBalancerVault = await DeployedContracts.MockBalancerVault.deployed();

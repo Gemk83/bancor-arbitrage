@@ -132,11 +132,14 @@ export const DeployedContracts = {
 };
 
 export const isTenderlyFork = () => getNetworkName() === DeploymentNetwork.Tenderly;
-export const isMainnet = () => getNetworkName() === DeploymentNetwork.Mainnet || isTenderlyFork();
+export const isTenderlyTestnet = () => getNetworkName() === DeploymentNetwork.TenderlyTestnet;
+export const isMainnet = () =>
+    getNetworkName() === DeploymentNetwork.Mainnet || isTenderlyFork() || isTenderlyTestnet();
 export const isBase = () => getNetworkName() === DeploymentNetwork.Base || isTenderlyFork();
 export const isArbitrum = () => getNetworkName() === DeploymentNetwork.Arbitrum || isTenderlyFork();
 export const isSepolia = () => getNetworkName() === DeploymentNetwork.Sepolia;
-export const isLive = () => (isMainnet() || isSepolia() || isBase() || isArbitrum()) && !isTenderlyFork();
+export const isLive = () =>
+    (isMainnet() || isSepolia() || isBase() || isArbitrum()) && !(isTenderlyFork() || isTenderlyTestnet());
 
 const TEST_MINIMUM_BALANCE = toWei(10);
 const TEST_FUNDING = toWei(10);
@@ -152,7 +155,7 @@ export const getNamedSigners = async (): Promise<Record<string, SignerWithAddres
 };
 
 export const fundAccount = async (account: string | SignerWithAddress) => {
-    if (!isTenderlyFork()) {
+    if (!isTenderlyFork() && !isTenderlyTestnet()) {
         return;
     }
 
@@ -553,7 +556,7 @@ interface ContractData {
 
 const verifyTenderlyFork = async (deployment: Deployment) => {
     // verify contracts on Tenderly only for mainnet or tenderly mainnet forks deployments
-    if (!isTenderlyFork() || isTestFork) {
+    if ((!isTenderlyFork() || isTestFork) && !isTenderlyTestnet()) {
         return;
     }
 
