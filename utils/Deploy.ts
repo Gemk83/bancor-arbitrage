@@ -138,8 +138,8 @@ export const isMainnet = () =>
 export const isBase = () => getNetworkName() === DeploymentNetwork.Base || isTenderlyFork();
 export const isArbitrum = () => getNetworkName() === DeploymentNetwork.Arbitrum || isTenderlyFork();
 export const isSepolia = () => getNetworkName() === DeploymentNetwork.Sepolia;
-export const isLive = () =>
-    (isMainnet() || isSepolia() || isBase() || isArbitrum()) && !(isTenderlyFork() || isTenderlyTestnet());
+export const isLive = () => (isMainnet() || isSepolia() || isBase() || isArbitrum()) && !isTenderly();
+export const isTenderly = () => isTenderlyFork() || isTenderlyTestnet();
 
 const TEST_MINIMUM_BALANCE = toWei(10);
 const TEST_FUNDING = toWei(10);
@@ -155,7 +155,7 @@ export const getNamedSigners = async (): Promise<Record<string, SignerWithAddres
 };
 
 export const fundAccount = async (account: string | SignerWithAddress) => {
-    if (!isTenderlyFork() && !isTenderlyTestnet()) {
+    if (!isTenderly()) {
         return;
     }
 

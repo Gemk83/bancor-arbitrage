@@ -136,7 +136,7 @@ const runDeployments = async () => {
 const archiveArtifacts = async () => {
     const zip = new AdmZip();
 
-    const srcDir = path.resolve(path.join(__dirname, './tenderly_testnet'));
+    const srcDir = path.resolve(path.join(__dirname, './tenderly-testnet'));
     const dest = path.resolve(path.join(__dirname, `../testnet-${testnetId}.zip`));
 
     zip.addLocalFolder(srcDir);

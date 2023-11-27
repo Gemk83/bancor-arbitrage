@@ -93,7 +93,7 @@ const config: HardhatUserConfig = {
             deploy: [`deploy/scripts/${DeploymentNetwork.Sepolia}`]
         },
         [DeploymentNetwork.Tenderly]: {
-            chainId: parseInt(TENDERLY_NETWORK_ID),
+            chainId: Number(TENDERLY_NETWORK_ID),
             url: `https://rpc.tenderly.co/fork/${TENDERLY_FORK_ID}`,
             autoImpersonate: true,
             saveDeployments: true,
@@ -101,7 +101,7 @@ const config: HardhatUserConfig = {
             deploy: [`deploy/scripts/${TENDERLY_FORK_NETWORK_NAME}`]
         },
         [DeploymentNetwork.TenderlyTestnet]: {
-            chainId: parseInt(TENDERLY_NETWORK_ID),
+            chainId: Number(TENDERLY_NETWORK_ID),
             url: TENDERLY_TESTNET_PROVIDER_URL,
             autoImpersonate: true,
             saveDeployments: true,

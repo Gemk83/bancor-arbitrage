@@ -1,5 +1,5 @@
 import Contracts from '../components/Contracts';
-import { getNamedSigners, isTenderlyFork, isTenderlyTestnet, runPendingDeployments } from '../utils/Deploy';
+import { getNamedSigners, isTenderly, isTenderlyFork, isTenderlyTestnet, runPendingDeployments } from '../utils/Deploy';
 import Logger from '../utils/Logger';
 import { NATIVE_TOKEN_ADDRESS, ZERO_ADDRESS } from '../utils/Constants';
 import { toWei } from '../utils/Types';
@@ -147,7 +147,7 @@ const archiveArtifacts = async () => {
 };
 
 const main = async () => {
-    if (!isTenderlyFork() && !isTenderlyTestnet()) {
+    if (!isTenderly()) {
         throw new Error('Invalid network');
     }
 
