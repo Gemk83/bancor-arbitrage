@@ -15,7 +15,11 @@ typechain-types
 contracts/hardhat-dependency-compiler
 
 deployments/mainnet/solcInputs/*
+deployments/base/solcInputs/*
+deployments/arbitrum/solcInputs/*
 deployments/hardhat/*
 deployments/tenderly/*
+deployments/tenderly-testnet/*
 
 fork-*.zip
+testnet-*.zip
