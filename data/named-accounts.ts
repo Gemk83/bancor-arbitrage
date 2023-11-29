@@ -10,7 +10,8 @@ const mainnet = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Mainnet) {
         return {
             [DeploymentNetwork.Mainnet]: address,
-            [DeploymentNetwork.Tenderly]: address
+            [DeploymentNetwork.Tenderly]: address,
+            [DeploymentNetwork.TenderlyTestnet]: address
         };
     }
     return {
@@ -22,7 +23,8 @@ const base = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Base) {
         return {
             [DeploymentNetwork.Base]: address,
-            [DeploymentNetwork.Tenderly]: address
+            [DeploymentNetwork.Tenderly]: address,
+            [DeploymentNetwork.TenderlyTestnet]: address
         };
     }
     return {
@@ -34,7 +36,8 @@ const arbitrum = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Arbitrum) {
         return {
             [DeploymentNetwork.Arbitrum]: address,
-            [DeploymentNetwork.Tenderly]: address
+            [DeploymentNetwork.Tenderly]: address,
+            [DeploymentNetwork.TenderlyTestnet]: address
         };
     }
     return {
@@ -46,7 +49,8 @@ const sepolia = (address: string) => {
     if (TENDERLY_NETWORK_ID === NetworkId.Sepolia) {
         return {
             [DeploymentNetwork.Sepolia]: address,
-            [DeploymentNetwork.Tenderly]: address
+            [DeploymentNetwork.Tenderly]: address,
+            [DeploymentNetwork.TenderlyTestnet]: address
         };
     }
     return {

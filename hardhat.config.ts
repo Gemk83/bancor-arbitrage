@@ -17,6 +17,7 @@ interface EnvOptions {
     BASE_PROVIDER_URL?: string;
     ARBITRUM_PROVIDER_URL?: string;
     ETHEREUM_SEPOLIA_PROVIDER_URL?: string;
+    TENDERLY_TESTNET_PROVIDER_URL?: string;
     ETHERSCAN_API_KEY?: string;
     BASESCAN_API_KEY?: string;
     ARBISCAN_API_KEY?: string;
@@ -27,6 +28,7 @@ interface EnvOptions {
     TENDERLY_USERNAME?: string;
     TENDERLY_NETWORK_ID?: string;
     TENDERLY_FORK_NETWORK_NAME?: string;
+    TENDERLY_TESTNET_NETWORK_NAME?: string;
 }
 
 const {
@@ -34,6 +36,7 @@ const {
     BASE_PROVIDER_URL = '',
     ARBITRUM_PROVIDER_URL = '',
     ETHEREUM_SEPOLIA_PROVIDER_URL = '',
+    TENDERLY_TESTNET_PROVIDER_URL = '',
     ETHERSCAN_API_KEY = '',
     BASESCAN_API_KEY = '',
     ARBISCAN_API_KEY = '',
@@ -43,7 +46,8 @@ const {
     TENDERLY_TEST_PROJECT = '',
     TENDERLY_USERNAME = '',
     TENDERLY_NETWORK_ID = '1',
-    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet
+    TENDERLY_FORK_NETWORK_NAME = DeploymentNetwork.Mainnet,
+    TENDERLY_TESTNET_NETWORK_NAME = DeploymentNetwork.Mainnet
 }: EnvOptions = process.env as any as EnvOptions;
 
 const config: HardhatUserConfig = {
@@ -89,12 +93,20 @@ const config: HardhatUserConfig = {
             deploy: [`deploy/scripts/${DeploymentNetwork.Sepolia}`]
         },
         [DeploymentNetwork.Tenderly]: {
-            chainId: parseInt(TENDERLY_NETWORK_ID),
+            chainId: Number(TENDERLY_NETWORK_ID),
             url: `https://rpc.tenderly.co/fork/${TENDERLY_FORK_ID}`,
             autoImpersonate: true,
             saveDeployments: true,
             live: true,
             deploy: [`deploy/scripts/${TENDERLY_FORK_NETWORK_NAME}`]
+        },
+        [DeploymentNetwork.TenderlyTestnet]: {
+            chainId: Number(TENDERLY_NETWORK_ID),
+            url: TENDERLY_TESTNET_PROVIDER_URL,
+            autoImpersonate: true,
+            saveDeployments: true,
+            live: true,
+            deploy: [`deploy/scripts/${TENDERLY_TESTNET_NETWORK_NAME}`]
         }
     },
     solidity: {
@@ -139,7 +151,8 @@ const config: HardhatUserConfig = {
             [DeploymentNetwork.Base]: [`deployments/${DeploymentNetwork.Base}`],
             [DeploymentNetwork.Arbitrum]: [`deployments/${DeploymentNetwork.Arbitrum}`],
             [DeploymentNetwork.Sepolia]: [`deployments/${DeploymentNetwork.Sepolia}`],
-            [DeploymentNetwork.Tenderly]: [`deployments/${DeploymentNetwork.Tenderly}`]
+            [DeploymentNetwork.Tenderly]: [`deployments/${DeploymentNetwork.Tenderly}`],
+            [DeploymentNetwork.TenderlyTestnet]: [`deployments/${DeploymentNetwork.TenderlyTestnet}`]
         }
     },
     etherscan: {
