@@ -15,6 +15,7 @@ import { ZeroValue, InvalidAddress } from "../contracts/utility/Utils.sol";
 import { TransparentUpgradeableProxyImmutable } from "../contracts/utility/TransparentUpgradeableProxyImmutable.sol";
 import { Utilities } from "./Utilities.t.sol";
 import { BancorArbitrage } from "../contracts/arbitrage/BancorArbitrage.sol";
+import { Upgradeable } from "../contracts/utility/Upgradeable.sol";
 import { MockExchanges } from "../contracts/helpers/MockExchanges.sol";
 import { MockBalancerVault } from "../contracts/helpers/MockBalancerVault.sol";
 import { TestBNT } from "../contracts/helpers/TestBNT.sol";
@@ -236,6 +237,32 @@ contract BancorArbitrageV2ArbsTest is Test {
         BancorArbitrage __bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
         vm.expectRevert("Initializable: contract is already initialized");
         __bancorArbitrage.initialize();
+    }
+
+    /**
+     * @dev test should revert when attempting to call postUpgrade on a newly deployed contract
+     */
+    function testShouldRevertWhenAttemptingToCallPostUpgrade() public {
+        // init platforms struct
+        platformStruct = getPlatformStruct(address(exchanges), address(balancerVault));
+        // Deploy arbitrage contract
+        BancorArbitrage __bancorArbitrage = new BancorArbitrage(bnt, weth, protocolWallet, platformStruct);
+
+        // call postUpgrade on the implementation
+        vm.expectRevert(Upgradeable.AlreadyInitialized.selector);
+        __bancorArbitrage.postUpgrade("");
+
+        bytes memory selector = abi.encodeWithSelector(bancorArbitrage.initialize.selector);
+
+        // deploy arb proxy
+        address arbProxy = address(
+            new TransparentUpgradeableProxyImmutable(address(__bancorArbitrage), payable(address(proxyAdmin)), selector)
+        );
+        __bancorArbitrage = BancorArbitrage(payable(arbProxy));
+
+        // call postUpgrade on the proxy
+        vm.expectRevert(Upgradeable.AlreadyInitialized.selector);
+        __bancorArbitrage.postUpgrade("");
     }
 
     /**
