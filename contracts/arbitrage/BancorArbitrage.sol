@@ -216,7 +216,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev performs contract-specific initialization
      */
     function __BancorArbitrage_init_unchained() internal onlyInitializing {
-        _rewards = Rewards({ percentagePPM: 100000, maxAmount: 100 * 1e18 });
+        _rewards = Rewards({ percentagePPM: 500000, maxAmount: 100 * 1e18 });
     }
 
     /**
@@ -646,17 +646,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
                 uint128(minTargetAmount)
             );
 
-            uint256 remainingSourceTokens = sourceToken.balanceOf(address(this));
-            // bool shouldSweep encoded in customInt for Carbon
-            // if bool is false, don't sweep the remaining tokens -
-            // used in case one of the flashloan tokens matches the source token
-            bool shouldSweep = (customInt & 1) != 1;
-            if (remainingSourceTokens > 0 && shouldSweep) {
-                // transfer any remaining source tokens to the protocol wallet
-                // safe due to nonReentrant modifier (forwards all available gas in case of ETH)
-                sourceToken.unsafeTransfer(_protocolWallet, remainingSourceTokens);
-            }
-
             return;
         }
 
@@ -804,8 +793,30 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             protocolAmounts[i] = protocolAmount;
         }
 
-        (uint16[] memory platformIds, address[] memory path) = _buildArbPath(routes);
+        (uint16[] memory platformIds, address[] memory path, address[] memory uniqueTokens) = _buildArbPath(routes);
+
+        // sweep the remaining tokens after the arb
+        _sweepLeftoverTokens(uniqueTokens);
         emit ArbitrageExecuted(caller, platformIds, path, sourceTokens, sourceAmounts, protocolAmounts, rewardAmounts);
+    }
+
+    /**
+     * @dev sweep leftover tokens to the protocol wallet
+     */
+    function _sweepLeftoverTokens(address[] memory uniqueTokens) private {
+        for (uint256 i = 0; i < uniqueTokens.length; ++i) {
+            Token token = Token(uniqueTokens[i]);
+            uint256 tokenBalance = token.balanceOf(address(this));
+            if (tokenBalance > 0) {
+                if (token.isEqual(_bnt)) {
+                    // if token is bnt burn it directly
+                    token.safeTransfer(address(_bnt), tokenBalance);
+                } else {
+                    // else transfer to protocol wallet
+                    token.unsafeTransfer(_protocolWallet, tokenBalance);
+                }
+            }
+        }
     }
 
     /**
@@ -813,14 +824,39 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      */
     function _buildArbPath(
         TradeRoute[] memory routes
-    ) private pure returns (uint16[] memory platformIds, address[] memory path) {
+    ) private pure returns (uint16[] memory platformIds, address[] memory path, address[] memory uniqueTokens) {
         platformIds = new uint16[](routes.length);
         path = new address[](routes.length * 2);
-        for (uint256 i = 0; i < routes.length; i = uncheckedInc(i)) {
+        uniqueTokens = new address[](routes.length * 2); // Maximum possible unique tokens
+        uint256 uniqueCount = 0;
+
+        for (uint256 i = 0; i < routes.length; i++) {
             platformIds[i] = routes[i].platformId;
-            path[i * 2] = address(routes[i].sourceToken);
-            path[uncheckedInc(i * 2)] = address(routes[i].targetToken);
+            address sourceAddress = address(routes[i].sourceToken);
+            address targetAddress = address(routes[i].targetToken);
+
+            // Add source and target tokens to path
+            path[i * 2] = sourceAddress;
+            path[i * 2 + 1] = targetAddress;
+
+            // Check for uniqueness and add to uniqueTokens
+            if (!_isInArray(sourceAddress, uniqueTokens, uniqueCount)) {
+                uniqueTokens[uniqueCount] = sourceAddress;
+                uniqueCount++;
+            }
+            if (!_isInArray(targetAddress, uniqueTokens, uniqueCount)) {
+                uniqueTokens[uniqueCount] = targetAddress;
+                uniqueCount++;
+            }
         }
+
+        // Resize uniqueTokens to actual size
+        address[] memory trimmedUniqueTokens = new address[](uniqueCount);
+        for (uint256 i = 0; i < uniqueCount; i++) {
+            trimmedUniqueTokens[i] = uniqueTokens[i];
+        }
+
+        return (platformIds, path, trimmedUniqueTokens);
     }
 
     /**
@@ -861,6 +897,18 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // increase allowance to the max amount if allowance < inputAmount
             token.forceApprove(platform, type(uint256).max);
         }
+    }
+
+    /**
+     * @dev check if an address is in an array
+     */
+    function _isInArray(address element, address[] memory array, uint256 arrayLength) private pure returns (bool) {
+        for (uint256 i = 0; i < arrayLength; i++) {
+            if (array[i] == element) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function uncheckedInc(uint256 i) private pure returns (uint256 j) {

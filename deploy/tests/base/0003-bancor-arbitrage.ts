@@ -26,7 +26,7 @@ describeDeployment(__filename, () => {
         expect(await bancorArbitrage.version()).to.equal(8);
 
         const arbRewards = await bancorArbitrage.rewards();
-        expect(arbRewards.percentagePPM).to.equal(toPPM(10));
+        expect(arbRewards.percentagePPM).to.equal(toPPM(50));
         expect(arbRewards.maxAmount).to.equal(toWei(100));
     });
 });
