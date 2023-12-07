@@ -804,7 +804,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev sweep leftover tokens to the protocol wallet
      */
     function _sweepLeftoverTokens(address[] memory uniqueTokens) private {
-        for (uint256 i = 0; i < uniqueTokens.length; ++i) {
+        for (uint256 i = 0; i < uniqueTokens.length; i = uncheckedInc(i)) {
             Token token = Token(uniqueTokens[i]);
             uint256 tokenBalance = token.balanceOf(address(this));
             if (tokenBalance > 0) {
@@ -830,7 +830,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         uniqueTokens = new address[](routes.length * 2); // Maximum possible unique tokens
         uint256 uniqueCount = 0;
 
-        for (uint256 i = 0; i < routes.length; i++) {
+        for (uint256 i = 0; i < routes.length; i = uncheckedInc(i)) {
             platformIds[i] = routes[i].platformId;
             address sourceAddress = address(routes[i].sourceToken);
             address targetAddress = address(routes[i].targetToken);
@@ -842,17 +842,17 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // Check for uniqueness and add to uniqueTokens
             if (!_isInArray(sourceAddress, uniqueTokens, uniqueCount)) {
                 uniqueTokens[uniqueCount] = sourceAddress;
-                uniqueCount++;
+                uniqueCount = uncheckedInc(uniqueCount);
             }
             if (!_isInArray(targetAddress, uniqueTokens, uniqueCount)) {
                 uniqueTokens[uniqueCount] = targetAddress;
-                uniqueCount++;
+                uniqueCount = uncheckedInc(uniqueCount);
             }
         }
 
         // Resize uniqueTokens to actual size
         address[] memory trimmedUniqueTokens = new address[](uniqueCount);
-        for (uint256 i = 0; i < uniqueCount; i++) {
+        for (uint256 i = 0; i < uniqueCount; i = uncheckedInc(i)) {
             trimmedUniqueTokens[i] = uniqueTokens[i];
         }
 
@@ -903,7 +903,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev check if an address is in an array
      */
     function _isInArray(address element, address[] memory array, uint256 arrayLength) private pure returns (bool) {
-        for (uint256 i = 0; i < arrayLength; i++) {
+        for (uint256 i = 0; i < arrayLength; i = uncheckedInc(i)) {
             if (array[i] == element) {
                 return true;
             }
