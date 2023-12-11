@@ -128,6 +128,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
     "PLATFORM_ID_SUSHISWAP()": FunctionFragment;
     "PLATFORM_ID_UNISWAP_V2_FORK()": FunctionFragment;
     "PLATFORM_ID_UNISWAP_V3_FORK()": FunctionFragment;
+    "PLATFORM_ID_WETH()": FunctionFragment;
     "flashloanAndArbV2((uint16,address[],uint256[])[],(uint16,address,address,uint256,uint256,uint256,address,uint256,bytes)[])": FunctionFragment;
     "fundAndArb((uint16,address,address,uint256,uint256,uint256,address,uint256,bytes)[],address,uint256)": FunctionFragment;
     "getRoleAdmin(bytes32)": FunctionFragment;
@@ -160,6 +161,7 @@ export interface BancorArbitrageInterface extends utils.Interface {
       | "PLATFORM_ID_SUSHISWAP"
       | "PLATFORM_ID_UNISWAP_V2_FORK"
       | "PLATFORM_ID_UNISWAP_V3_FORK"
+      | "PLATFORM_ID_WETH"
       | "flashloanAndArbV2"
       | "fundAndArb"
       | "getRoleAdmin"
@@ -218,6 +220,10 @@ export interface BancorArbitrageInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "PLATFORM_ID_UNISWAP_V3_FORK",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "PLATFORM_ID_WETH",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -325,6 +331,10 @@ export interface BancorArbitrageInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "PLATFORM_ID_UNISWAP_V3_FORK",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "PLATFORM_ID_WETH",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -511,6 +521,8 @@ export interface BancorArbitrage extends BaseContract {
 
     PLATFORM_ID_UNISWAP_V3_FORK(overrides?: CallOverrides): Promise<[number]>;
 
+    PLATFORM_ID_WETH(overrides?: CallOverrides): Promise<[number]>;
+
     flashloanAndArbV2(
       flashloans: BancorArbitrage.FlashloanStruct[],
       routes: BancorArbitrage.TradeRouteStruct[],
@@ -626,6 +638,8 @@ export interface BancorArbitrage extends BaseContract {
 
   PLATFORM_ID_UNISWAP_V3_FORK(overrides?: CallOverrides): Promise<number>;
 
+  PLATFORM_ID_WETH(overrides?: CallOverrides): Promise<number>;
+
   flashloanAndArbV2(
     flashloans: BancorArbitrage.FlashloanStruct[],
     routes: BancorArbitrage.TradeRouteStruct[],
@@ -740,6 +754,8 @@ export interface BancorArbitrage extends BaseContract {
     PLATFORM_ID_UNISWAP_V2_FORK(overrides?: CallOverrides): Promise<number>;
 
     PLATFORM_ID_UNISWAP_V3_FORK(overrides?: CallOverrides): Promise<number>;
+
+    PLATFORM_ID_WETH(overrides?: CallOverrides): Promise<number>;
 
     flashloanAndArbV2(
       flashloans: BancorArbitrage.FlashloanStruct[],
@@ -922,6 +938,8 @@ export interface BancorArbitrage extends BaseContract {
 
     PLATFORM_ID_UNISWAP_V3_FORK(overrides?: CallOverrides): Promise<BigNumber>;
 
+    PLATFORM_ID_WETH(overrides?: CallOverrides): Promise<BigNumber>;
+
     flashloanAndArbV2(
       flashloans: BancorArbitrage.FlashloanStruct[],
       routes: BancorArbitrage.TradeRouteStruct[],
@@ -1054,6 +1072,8 @@ export interface BancorArbitrage extends BaseContract {
     PLATFORM_ID_UNISWAP_V3_FORK(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    PLATFORM_ID_WETH(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     flashloanAndArbV2(
       flashloans: BancorArbitrage.FlashloanStruct[],
