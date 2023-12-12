@@ -18,7 +18,8 @@ interface EnvOptions {
     ARBITRUM_PROVIDER_URL?: string;
     ETHEREUM_SEPOLIA_PROVIDER_URL?: string;
     TENDERLY_TESTNET_PROVIDER_URL?: string;
-    ETHERSCAN_API_KEY?: string;
+    MAINNET_ETHERSCAN_API_KEY?: string;
+    SEPOLIA_ETHERSCAN_API_KEY?: string;
     BASESCAN_API_KEY?: string;
     ARBISCAN_API_KEY?: string;
     GAS_PRICE?: number | 'auto';
@@ -37,7 +38,8 @@ const {
     ARBITRUM_PROVIDER_URL = '',
     ETHEREUM_SEPOLIA_PROVIDER_URL = '',
     TENDERLY_TESTNET_PROVIDER_URL = '',
-    ETHERSCAN_API_KEY = '',
+    MAINNET_ETHERSCAN_API_KEY = '',
+    SEPOLIA_ETHERSCAN_API_KEY = '',
     BASESCAN_API_KEY = '',
     ARBISCAN_API_KEY = '',
     GAS_PRICE: gasPrice = 'auto',
@@ -67,7 +69,12 @@ const config: HardhatUserConfig = {
             gasPrice,
             saveDeployments: true,
             live: true,
-            deploy: [`deploy/scripts/${DeploymentNetwork.Mainnet}`]
+            deploy: [`deploy/scripts/${DeploymentNetwork.Mainnet}`],
+            verify: {
+                etherscan: {
+                    apiKey: MAINNET_ETHERSCAN_API_KEY
+                }
+            }
         },
         [DeploymentNetwork.Base]: {
             chainId: 8453,
@@ -75,7 +82,12 @@ const config: HardhatUserConfig = {
             gasPrice,
             saveDeployments: true,
             live: true,
-            deploy: [`deploy/scripts/${DeploymentNetwork.Base}`]
+            deploy: [`deploy/scripts/${DeploymentNetwork.Base}`],
+            verify: {
+                etherscan: {
+                    apiKey: BASESCAN_API_KEY
+                }
+            }
         },
         [DeploymentNetwork.Arbitrum]: {
             chainId: 42161,
@@ -83,14 +95,24 @@ const config: HardhatUserConfig = {
             gasPrice,
             saveDeployments: true,
             live: true,
-            deploy: [`deploy/scripts/${DeploymentNetwork.Arbitrum}`]
+            deploy: [`deploy/scripts/${DeploymentNetwork.Arbitrum}`],
+            verify: {
+                etherscan: {
+                    apiKey: ARBISCAN_API_KEY
+                }
+            }
         },
         [DeploymentNetwork.Sepolia]: {
             chainId: 11155111,
             url: ETHEREUM_SEPOLIA_PROVIDER_URL,
             saveDeployments: true,
             live: true,
-            deploy: [`deploy/scripts/${DeploymentNetwork.Sepolia}`]
+            deploy: [`deploy/scripts/${DeploymentNetwork.Sepolia}`],
+            verify: {
+                etherscan: {
+                    apiKey: SEPOLIA_ETHERSCAN_API_KEY
+                }
+            }
         },
         [DeploymentNetwork.Tenderly]: {
             chainId: Number(TENDERLY_NETWORK_ID),
@@ -154,24 +176,6 @@ const config: HardhatUserConfig = {
             [DeploymentNetwork.Tenderly]: [`deployments/${DeploymentNetwork.Tenderly}`],
             [DeploymentNetwork.TenderlyTestnet]: [`deployments/${DeploymentNetwork.TenderlyTestnet}`]
         }
-    },
-    etherscan: {
-        apiKey: {
-            mainnet: ETHERSCAN_API_KEY,
-            base: BASESCAN_API_KEY,
-            arbitrumOne: ARBISCAN_API_KEY,
-            sepolia: ETHERSCAN_API_KEY
-        },
-        customChains: [
-            {
-                network: 'base',
-                chainId: 8453,
-                urls: {
-                    apiURL: 'https://api.basescan.org',
-                    browserURL: 'https://basescan.org'
-                }
-            }
-        ]
     }
 };
 
