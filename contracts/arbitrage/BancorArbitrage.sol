@@ -216,7 +216,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev performs contract-specific initialization
      */
     function __BancorArbitrage_init_unchained() internal onlyInitializing {
-        _rewards = Rewards({ percentagePPM: 100000, maxAmount: 100 * 1e18 });
+        _rewards = Rewards({ percentagePPM: 500000, maxAmount: 1000 * 1e18 });
     }
 
     /**
