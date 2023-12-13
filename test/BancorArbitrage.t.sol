@@ -755,21 +755,6 @@ contract BancorArbitrageV2ArbsTest is Test {
      * @dev test reverts if the source token isn't tradeable on bancor network v3
      * @dev test user-funded arb
      */
-    function testShouldRevertIfUserFundedTokenIsntTradeable() public {
-        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(nonWhitelistedToken, AMOUNT);
-        BancorArbitrage.TradeRoute[] memory routes = getRoutes();
-        // set last token to be the non-whitelisted token
-        routes[2].targetToken = Token(address(nonWhitelistedToken));
-        routes[2].customAddress = address(nonWhitelistedToken);
-        vm.expectRevert(BancorArbitrage.InvalidSourceToken.selector);
-        // make arb with the non-whitelisted token
-        executeArbitrageNoApproval(flashloans, routes, true);
-    }
-
-    /**
-     * @dev test reverts if the source token isn't tradeable on bancor network v3
-     * @dev test user-funded arb
-     */
     function testShouldRevertIfUserFundedArbLastArbTokenIsntEqualToInitialArbToken() public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(nonWhitelistedToken, AMOUNT);
         BancorArbitrage.TradeRoute[] memory routes = getRoutes();

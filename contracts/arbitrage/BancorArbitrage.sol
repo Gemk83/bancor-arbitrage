@@ -390,10 +390,6 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         if (finalToken != token) {
             revert InvalidInitialAndFinalTokens();
         }
-        // validate token is tradeable on v3
-        if (!token.isEqual(_bnt) && _bancorNetworkV3.collectionByPool(token) == address(0)) {
-            revert InvalidSourceToken();
-        }
         // validate ETH amount sent with function is correct
         if (token.isNative()) {
             if (value != sourceAmount) {
