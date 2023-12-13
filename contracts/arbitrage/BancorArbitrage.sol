@@ -228,7 +228,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 10;
+        return 11;
     }
 
     /**
@@ -385,7 +385,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         Token finalToken,
         uint256 sourceAmount,
         uint256 value
-    ) private view {
+    ) private pure {
         // verify that the last token in the process is the arb token
         if (finalToken != token) {
             revert InvalidInitialAndFinalTokens();
