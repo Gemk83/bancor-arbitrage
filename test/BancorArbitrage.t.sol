@@ -1245,13 +1245,11 @@ contract BancorArbitrageV2ArbsTest is Test {
      * @param arbAmount arb amount to test with
      * @param leftoverAmount amount of tokens left over after the carbon trade
      * @param userFunded whether arb is user funded or flashloan
-     * @param shouldSweep whether leftover tokens should be transferred or not
      */
     function testShouldTransferLeftoverSourceTokensFromCarbonTrade(
         uint256 arbAmount,
         uint256 leftoverAmount,
-        bool userFunded,
-        bool shouldSweep
+        bool userFunded
     ) public {
         // bound arb amount from 1 to AMOUNT
         arbAmount = bound(arbAmount, 1, AMOUNT);
@@ -1263,8 +1261,6 @@ contract BancorArbitrageV2ArbsTest is Test {
         uint256 sourceTokenAmountForCarbonTrade = arbAmount + 300 ether;
         // encode less tokens for the trade than the source token balance at this point in the arb
         routes[1].customData = getCarbonData(sourceTokenAmountForCarbonTrade - leftoverAmount);
-        // encode whether we should sweep the tokens
-        routes[1].customInt = shouldSweep ? routes[1].customInt : routes[1].customInt | 1;
 
         // get source token balance in the protocol wallet before the trade
         uint256 sourceBalanceBefore = arbToken1.balanceOf(protocolWallet);
@@ -1276,17 +1272,10 @@ contract BancorArbitrageV2ArbsTest is Test {
         uint256 sourceBalanceAfter = arbToken1.balanceOf(protocolWallet);
         uint256 sourceBalanceTransferred = sourceBalanceAfter - sourceBalanceBefore;
 
-        if (shouldSweep) {
-            // assert that the entire leftover amount is transferred to the protocol wallet
-            assertEq(leftoverAmount, sourceBalanceTransferred);
-            // assert that no source tokens are left in the arb contract
-            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
-        } else {
-            // assert that nothing has been transferred to the protocol wallet
-            assertEq(sourceBalanceTransferred, 0);
-            // assert that all the leftover source tokens are left in the arb contract
-            assertEq(arbToken1.balanceOf(address(bancorArbitrage)), leftoverAmount);
-        }
+        // assert that the entire leftover amount is transferred to the protocol wallet
+        assertEq(leftoverAmount, sourceBalanceTransferred);
+        // assert that no source tokens are left in the arb contract
+        assertEq(arbToken1.balanceOf(address(bancorArbitrage)), 0);
     }
 
     /**
@@ -1543,7 +1532,7 @@ contract BancorArbitrageV2ArbsTest is Test {
 
     /**
      * @dev test that arb hop will take only the specified source amount as input
-     *      leftover tokens stay in the contract
+     *      leftover tokens get swept to the protocol wallet at the end of the arb
      */
     function testArbHopShouldTakeOnlyTheSpecifiedSourceAmountAsInput(bool userFunded) public {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
@@ -1560,25 +1549,86 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         vm.stopPrank();
         uint256 userBalanceBefore = bnt.balanceOf(user1);
-        uint256 balanceBefore1 = arbToken1.balanceOf(address(bancorArbitrage));
-        uint256 balanceBefore2 = arbToken2.balanceOf(address(bancorArbitrage));
+        uint256 balanceBefore1 = arbToken1.balanceOf(address(protocolWallet));
+        uint256 balanceBefore2 = arbToken2.balanceOf(address(protocolWallet));
         // make arb with AMOUNT
         executeArbitrageNoApproval(flashloans, routes, userFunded);
         // get user and arb contract balances
         uint256 userBalanceAfter = bnt.balanceOf(user1);
-        uint256 balanceAfter1 = arbToken1.balanceOf(address(bancorArbitrage));
-        uint256 balanceAfter2 = arbToken2.balanceOf(address(bancorArbitrage));
+        uint256 balanceAfter1 = arbToken1.balanceOf(address(protocolWallet));
+        uint256 balanceAfter2 = arbToken2.balanceOf(address(protocolWallet));
         uint256 userGain = userBalanceAfter - userBalanceBefore;
         // calculate expected user gain
         uint256 hopGain = exchanges.outputAmount();
         uint256 totalRewards = routes.length * hopGain - 200e18;
         BancorArbitrage.Rewards memory rewards = bancorArbitrage.rewards();
         uint256 expectedUserGain = (totalRewards * rewards.percentagePPM) / PPM_RESOLUTION;
-        // assert that 100 arbToken1 and arbToken2 tokens remain in the contract's balance
+
+        // we sweep tokens at the end, so the 100 arbToken1 and arbToken2 go to the protocol wallet's balance
+        // assert that 100 arbToken1 and arbToken2 go to the protocol wallet's balance
         assertEq(balanceAfter1, balanceBefore1 + 100e18);
         assertEq(balanceAfter2, balanceBefore2 + 100e18);
         // assert that user will gain exactly the expected amount
         assertEq(userGain, expectedUserGain);
+    }
+
+    /**
+     * @dev test that leftover tokens get swept to the protocol wallet
+     */
+    function testLeftoverTokensGetSweptToProtocolWallet(uint16 platformId, uint256 arbAmount, uint256 fee) public {
+        // limit arbAmount to AMOUNT
+        vm.assume(arbAmount > 0 && arbAmount < AMOUNT);
+        // test exchange ids 1 - 5 (w/o Carbon)
+        platformId = uint16(bound(platformId, FIRST_EXCHANGE_ID, 5));
+        address[] memory tokensToTrade = new address[](3);
+        tokensToTrade[0] = address(arbToken1);
+        tokensToTrade[1] = address(arbToken2);
+        tokensToTrade[2] = address(TokenLibrary.NATIVE_TOKEN);
+
+        // test with all token combinations
+        for (uint256 i = 0; i < 3; ++i) {
+            for (uint256 j = 0; j < 3; ++j) {
+                for (uint256 k = 0; k < 3; ++k) {
+                    if (i == j || i == k || j == k) {
+                        continue;
+                    }
+                    BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(
+                        IERC20(tokensToTrade[k]),
+                        arbAmount
+                    );
+                    BancorArbitrage.TradeRoute[] memory routes = getRoutesCustomTokens(
+                        platformId,
+                        tokensToTrade[i],
+                        tokensToTrade[j],
+                        tokensToTrade[k],
+                        arbAmount,
+                        fee
+                    );
+                    // set second hop to arbAmount + 200 arb token 1 as input
+                    // after the first hop, we have arbAmount + 300 tokens available
+                    routes[1].sourceAmount = arbAmount + 200e18;
+                    // set third hop to arbAmount + 400 arb token 2 as input
+                    // after the second hop, we have arbAmount + 500 tokens available
+                    routes[2].sourceAmount = arbAmount + 400e18;
+
+                    if (!isValidTestConfiguration(platformId, routes)) {
+                        continue;
+                    }
+
+                    // get protocol wallet balances before and after the arbitrage
+                    uint256 balanceBefore1 = Token(tokensToTrade[i]).balanceOf(address(protocolWallet));
+                    uint256 balanceBefore2 = Token(tokensToTrade[j]).balanceOf(address(protocolWallet));
+                    executeArbitrage(flashloans, routes, true);
+                    uint256 balanceAfter1 = Token(tokensToTrade[i]).balanceOf(address(protocolWallet));
+                    uint256 balanceAfter2 = Token(tokensToTrade[j]).balanceOf(address(protocolWallet));
+
+                    // we sweep tokens at the end, so the 100 arbToken1 and arbToken2 go to the protocol wallet's balance
+                    // assert that 100 arbToken1 and arbToken2 go to the protocol wallet's balance
+                    assertEq(balanceAfter1, balanceBefore1 + 100e18);
+                    assertEq(balanceAfter2, balanceBefore2 + 100e18);
+                }
+            }
+        }
     }
 
     /**
@@ -1606,19 +1656,19 @@ contract BancorArbitrageV2ArbsTest is Test {
         }
         vm.stopPrank();
         uint256 userBalanceBefore = bnt.balanceOf(user1);
-        uint256 balanceBefore = targetToken.balanceOf(address(bancorArbitrage));
+        uint256 balanceBefore = targetToken.balanceOf(address(protocolWallet));
         // make arb with AMOUNT
         executeArbitrageNoApproval(flashloans, routes, userFunded);
         // get user and arb contract balances
         uint256 userBalanceAfter = bnt.balanceOf(user1);
-        uint256 balanceAfter = targetToken.balanceOf(address(bancorArbitrage));
+        uint256 balanceAfter = targetToken.balanceOf(address(protocolWallet));
         uint256 userGain = userBalanceAfter - userBalanceBefore;
         // calculate expected user gain
         uint256 hopGain = exchanges.outputAmount();
         uint256 totalRewards = (routes.length - 1) * hopGain - 100e18; // no hop gain from wrapping / unwrapping
         BancorArbitrage.Rewards memory rewards = bancorArbitrage.rewards();
         uint256 expectedUserGain = (totalRewards * rewards.percentagePPM) / PPM_RESOLUTION;
-        // assert that 100 targetTokens (Native token or weth) tokens remain in the contract's balance
+        // assert that 100 targetTokens (Native token or weth) get swept to the protocol wallet
         assertEq(balanceAfter, balanceBefore + 100e18);
         // assert that user will gain exactly the expected amount
         assertEq(userGain, expectedUserGain);
