@@ -216,7 +216,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @dev performs contract-specific initialization
      */
     function __BancorArbitrage_init_unchained() internal onlyInitializing {
-        _rewards = Rewards({ percentagePPM: 500000, maxAmount: 100 * 1e18 });
+        _rewards = Rewards({ percentagePPM: 500000, maxAmount: 1000 * 1e18 });
     }
 
     /**
@@ -228,7 +228,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
      * @inheritdoc Upgradeable
      */
     function version() public pure override(Upgradeable) returns (uint16) {
-        return 10;
+        return 11;
     }
 
     /**
@@ -385,14 +385,10 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
         Token finalToken,
         uint256 sourceAmount,
         uint256 value
-    ) private view {
+    ) private pure {
         // verify that the last token in the process is the arb token
         if (finalToken != token) {
             revert InvalidInitialAndFinalTokens();
-        }
-        // validate token is tradeable on v3
-        if (!token.isEqual(_bnt) && _bancorNetworkV3.collectionByPool(token) == address(0)) {
-            revert InvalidSourceToken();
         }
         // validate ETH amount sent with function is correct
         if (token.isNative()) {
