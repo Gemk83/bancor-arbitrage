@@ -41,6 +41,7 @@ contract MockExchanges {
     error InsufficientFlashLoanReturn();
     error NotWhitelisted();
     error ZeroValue();
+    error GreaterThanMaxInput();
 
     /**
      * @dev triggered when a flash-loan is completed
@@ -184,7 +185,7 @@ contract MockExchanges {
     }
 
     /**
-     * Carbon controller trade
+     * Carbon controller trade by source amount
      */
     function tradeBySourceAmount(
         Token sourceToken,
@@ -199,6 +200,47 @@ contract MockExchanges {
             sourceAmount += uint128(tradeActions[i].amount);
         }
         return uint128(mockSwap(sourceToken, targetToken, sourceAmount, msg.sender, deadline, minReturn));
+    }
+
+    /**
+     * Carbon controller trade by target amount
+     */
+    function tradeByTargetAmount(
+        Token sourceToken,
+        Token targetToken,
+        TradeAction[] calldata tradeActions,
+        uint256 deadline,
+        uint128 maxInput
+    ) external payable returns (uint128) {
+        // calculate total source amount
+        uint256 sourceAmount = calculateTradeSourceAmount(sourceToken, targetToken, tradeActions);
+        // check if exceeding maxInput
+        if (sourceAmount > maxInput) {
+            revert GreaterThanMaxInput();
+        }
+        return uint128(mockSwap(sourceToken, targetToken, sourceAmount, msg.sender, deadline, 1));
+    }
+
+    /**
+     * @dev CarbonController view function
+     * @dev returns the source amount required when trading by target amount
+     */
+    function calculateTradeSourceAmount(
+        Token /* sourceToken */,
+        Token /* targetToken */,
+        TradeAction[] calldata tradeActions
+    ) public view returns (uint128) {
+        uint256 targetAmount = 0;
+        for (uint256 i = 0; i < tradeActions.length; ++i) {
+            targetAmount += uint128(tradeActions[i].amount);
+        }
+        uint128 sourceAmount = 0;
+        if (_profit) {
+            sourceAmount = (targetAmount - _outputAmount).toUint128();
+        } else {
+            sourceAmount = (targetAmount + _outputAmount).toUint128();
+        }
+        return sourceAmount;
     }
 
     /**

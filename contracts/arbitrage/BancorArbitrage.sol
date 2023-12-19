@@ -628,19 +628,32 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             // allow the carbon controller to withdraw the source tokens
             _setPlatformAllowance(sourceToken, address(controller), sourceAmount);
 
+            // decode trade by target flag (if the LSB of customInt is set to 1, we trade by target)
+            bool tradeByTargetAmount = (customInt & 1) == 1;
+
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
 
             // decode the trade actions passed in as customData
             TradeAction[] memory tradeActions = abi.decode(customData, (TradeAction[]));
 
             // perform the trade
-            controller.tradeBySourceAmount{ value: val }(
-                sourceToken,
-                targetToken,
-                tradeActions,
-                deadline,
-                uint128(minTargetAmount)
-            );
+            if (tradeByTargetAmount) {
+                controller.tradeByTargetAmount{ value: val }(
+                    sourceToken,
+                    targetToken,
+                    tradeActions,
+                    deadline,
+                    uint128(minTargetAmount) // minTargetAmount = maxInput for trade by target
+                );
+            } else {
+                controller.tradeBySourceAmount{ value: val }(
+                    sourceToken,
+                    targetToken,
+                    tradeActions,
+                    deadline,
+                    uint128(minTargetAmount)
+                );
+            }
 
             return;
         }

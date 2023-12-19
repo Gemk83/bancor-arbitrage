@@ -1060,7 +1060,13 @@ contract BancorArbitrageV2ArbsTest is Test {
         BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
 
         // test carbon
-        BancorArbitrage.TradeRoute[] memory routes = getRoutesCarbon(address(arbToken1), address(arbToken2), AMOUNT, 3);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCarbon(
+            address(arbToken1),
+            address(arbToken2),
+            AMOUNT,
+            3,
+            false
+        );
         // set custom address to 0 for carbon
         routes[1].customAddress = address(0);
 
@@ -1234,7 +1240,27 @@ contract BancorArbitrageV2ArbsTest is Test {
             address(arbToken1),
             address(arbToken2),
             arbAmount,
-            tradeActionCount
+            tradeActionCount,
+            false
+        );
+        executeArbitrage(flashloans, routes, userFunded);
+    }
+
+    /**
+     * @dev fuzz test arbs on carbon
+     * @dev use different arb amounts and 1 to 11 trade actions for the carbon arb
+     * @dev test both user-funded and flashloan arbs
+     */
+    function testTradeByTargetArbitrageOnCarbon(uint256 arbAmount, uint256 tradeActionCount, bool userFunded) public {
+        // bound arb amount from 1 to AMOUNT
+        arbAmount = bound(arbAmount, 1, AMOUNT);
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, arbAmount);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCarbon(
+            address(arbToken1),
+            address(arbToken2),
+            arbAmount,
+            tradeActionCount,
+            true
         );
         executeArbitrage(flashloans, routes, userFunded);
     }
@@ -1802,6 +1828,24 @@ contract BancorArbitrageV2ArbsTest is Test {
     }
 
     /**
+     * @dev test that trade by target arb attempt on carbon reverts if source amount is greater than max input
+     */
+    function testShouldRevertArbOnCarbonIfGreaterThanMaxInput() public {
+        BancorArbitrage.Flashloan[] memory flashloans = getSingleTokenFlashloanDataForV3(bnt, AMOUNT);
+        BancorArbitrage.TradeRoute[] memory routes = getRoutesCarbon(
+            address(arbToken1),
+            address(arbToken2),
+            AMOUNT,
+            3,
+            true
+        );
+        // minTargetAmount is used for maxInput if tradeByTarget is true
+        routes[1].minTargetAmount = AMOUNT / 2;
+        vm.expectRevert(MockExchanges.GreaterThanMaxInput.selector);
+        bancorArbitrage.flashloanAndArbV2(flashloans, routes);
+    }
+
+    /**
      * @dev test that arb attempt on carbon with invalid trade data should revert
      */
     function testShouldRevertArbOnCarbonWithLargerThanUint128TargetAmount() public {
@@ -2230,32 +2274,45 @@ contract BancorArbitrageV2ArbsTest is Test {
      * @param token1 - first swapped token
      * @param token2 - second swapped token
      * @param tradeActionCount - count of individual trade actions passed to carbon trade
+     * @param byTargetAmount - true if trade is by target amount
      */
     function getRoutesCarbon(
         address token1,
         address token2,
         uint256 arbAmount,
-        uint256 tradeActionCount
+        uint256 tradeActionCount,
+        bool byTargetAmount
     ) public view returns (BancorArbitrage.TradeRoute[] memory routes) {
         routes = new BancorArbitrage.TradeRoute[](3);
 
         // custom address should be the exchange for all carbon forks
         address customAddress = address(exchanges);
+
+        uint256 hopGain = exchanges.outputAmount();
         // generate from 1 to 11 actions
         // each action will trade `amount / tradeActionCount`
         tradeActionCount = bound(tradeActionCount, 1, 11);
         TradeAction[] memory tradeActions = new TradeAction[](tradeActionCount + 1);
-        // source amount at the point of carbon trade is arbAmount + _outputAmount = 300
-        uint256 totalSourceAmount = arbAmount + 300 ether;
+        // source amount at the point of carbon trade is arbAmount + hopGain = arbAmount + 300
+        // target amount is arbAmount + 2 * hopGain = arbAmount + 600
+        uint256 totalAmount = byTargetAmount ? arbAmount + hopGain * 2 : arbAmount + hopGain;
+        // set the individual action values
         for (uint256 i = 1; i <= tradeActionCount; ++i) {
-            tradeActions[i] = TradeAction({ strategyId: i, amount: uint128(totalSourceAmount / tradeActionCount) });
+            tradeActions[i] = TradeAction({ strategyId: i, amount: uint128(totalAmount / tradeActionCount) });
         }
         // add remainder of the division to the last trade action
-        // goal is for strategies sum to be exactly equal to the source amount
-        tradeActions[tradeActionCount].amount += uint128(totalSourceAmount % tradeActionCount);
+        // goal is for strategies sum to be exactly equal to the total amount
+        tradeActions[tradeActionCount].amount += uint128(totalAmount % tradeActionCount);
         bytes memory customData = abi.encode(tradeActions);
 
-        uint256 hopGain = exchanges.outputAmount();
+        // encode trade by target flag (if the LSB of customInt is set to 1, we trade by target on Carbon)
+        uint256 customInt = 0;
+        if (byTargetAmount) {
+            customInt = customInt | 1;
+        }
+
+        // set min target amount / max input depending on the `byTargetAmount` flag
+        uint256 minTargetAmount = byTargetAmount ? totalAmount - hopGain : 1;
 
         routes[0] = BancorArbitrage.TradeRoute({
             platformId: uint16(PlatformId.BANCOR_V2),
@@ -2273,11 +2330,11 @@ contract BancorArbitrageV2ArbsTest is Test {
             platformId: uint16(PlatformId.CARBON_FORK),
             sourceToken: Token(token1),
             targetToken: Token(token2),
-            sourceAmount: arbAmount + hopGain,
-            minTargetAmount: 1,
+            sourceAmount: totalAmount,
+            minTargetAmount: minTargetAmount,
             deadline: DEADLINE,
             customAddress: customAddress,
-            customInt: 0,
+            customInt: customInt,
             customData: customData
         });
 
