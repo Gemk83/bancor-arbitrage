@@ -104,6 +104,9 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
     // maximum number of trade routes supported
     uint256 private constant MAX_ROUTE_LENGTH = 10;
 
+    // boolean flags encoded in customInt for each platform
+    uint256 private constant CARBON_TRADE_BY_TARGET_FLAG = 1; // 0001
+
     // the bnt contract
     IERC20 internal immutable _bnt;
 
@@ -629,7 +632,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             _setPlatformAllowance(sourceToken, address(controller), sourceAmount);
 
             // decode trade by target flag (if the LSB of customInt is set to 1, we trade by target)
-            bool tradeByTargetAmount = (customInt & 1) != 0;
+            bool tradeByTargetAmount = (customInt & CARBON_TRADE_BY_TARGET_FLAG) == 1;
 
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
 
