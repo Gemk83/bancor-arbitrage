@@ -629,7 +629,7 @@ contract BancorArbitrage is ReentrancyGuardUpgradeable, Utils, Upgradeable {
             _setPlatformAllowance(sourceToken, address(controller), sourceAmount);
 
             // decode trade by target flag (if the LSB of customInt is set to 1, we trade by target)
-            bool tradeByTargetAmount = (customInt & 1) == 1;
+            bool tradeByTargetAmount = (customInt & 1) != 0;
 
             uint256 val = sourceToken.isNative() ? sourceAmount : 0;
 
